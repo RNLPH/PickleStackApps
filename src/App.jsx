@@ -23,14 +23,6 @@ const STORAGE_KEYS = {
   SESSION: "picklestack_session",
 };
 
-const MATCH_MODES = {
-  FAIR: "fair",
-  BRACKET: "bracket",
-};
-
-const FAIRNESS_GAP = 1;
-
-
 //FOR DRAG AND DROP PLAYERS function
 function DraggablePlayer({ player }) {
   const {
@@ -225,8 +217,7 @@ export default function App() {
   const [expandedMatchSession,
   setExpandedMatchSession] =
   useState(null);
-  const [matchMode, setMatchMode] =
-  useState(MATCH_MODES.BRACKET);
+ 
 
 const [sessionId, setSessionId] = useState(() => {
   return Number(
@@ -378,6 +369,21 @@ const sortPlayers = (
       ) {
         return -1;
       }
+
+      // Late arrivals go last
+if (
+  a.noPriority &&
+  !b.noPriority
+) {
+  return 1;
+}
+
+if (
+  !a.noPriority &&
+  b.noPriority
+) {
+  return -1;
+}
 
       if (
         !a.priority &&
@@ -620,20 +626,37 @@ const exportStandings = () => {
       "Player",
       "Games",
       "Wins",
-      "Losses"
+      "Losses",
+      "Win Rate"
     ]
   ];
 
   standings.forEach(
     (player, index) => {
 
-      rows.push([
-        index + 1,
-        player.name,
-        player.gamesPlayed,
-        player.wins,
-        player.losses,
-      ]);
+rows.push([
+  getStandingRank(
+    standings,
+    index
+  ),
+
+  player.name,
+
+  player.gamesPlayed,
+
+  player.wins,
+
+  player.losses,
+
+  `${
+    player.gamesPlayed > 0
+      ? Math.round(
+          (player.wins /
+            player.gamesPlayed) * 100
+        )
+      : 0
+  }%`,
+]);
 
     }
   );
@@ -950,6 +973,21 @@ const buildRotationGroup = (
         return 1;
       }
 
+      // Late arrivals go last
+      if (
+        a.noPriority &&
+        !b.noPriority
+      ) {
+        return 1;
+      }
+
+      if (
+        !a.noPriority &&
+        b.noPriority
+      ) {
+        return -1;
+      }
+
       // Unmatched first
       if (
         a.queueGroup === "unmatched" &&
@@ -985,25 +1023,7 @@ const buildRotationGroup = (
     .slice(0, 4);
 };
 
-//getUnmatchedPlayers 
-const getUnmatchedPlayers = (
-  playerList
-) => {
-  return playerList.filter(
-    player =>
-      player.queueGroup === "unmatched"
-  );
-};
-
-const getWinnerPlayers = (
-  playerList
-) => {
-  return playerList.filter(
-    player =>
-      player.queueGroup === "winner"
-  );
-};
-
+//LoserPlayers
 const getLoserPlayers = (
   playerList
 ) => {
@@ -1013,51 +1033,6 @@ const getLoserPlayers = (
   );
 };
 
-//getEligiblePlayers
-const getEligiblePlayers = (
-  playerList
-) => {
-
-  if (playerList.length === 0) {
-    return [];
-  }
-
-  const minGames = Math.min(
-    ...playerList.map(
-      player =>
-        player.gamesPlayed || 0
-    )
-  );
-
-  return playerList.filter(
-    player =>
-      (player.gamesPlayed || 0)
-      <=
-      minGames + FAIRNESS_GAP
-  );
-};
-
-//getQueuePriority 
-
-const getQueuePriority = (
-  queueGroup
-) => {
-
-  switch (queueGroup) {
-
-    case "unmatched":
-      return 0;
-
-    case "winner":
-      return 1;
-
-    case "loser":
-      return 2;
-
-    default:
-      return 3;
-  }
-};
 
 //recordPartners
 const recordPartners = (
@@ -1187,9 +1162,6 @@ await saveDirectoryPlayer(newPlayer);
     newPlayer,
   ]);
 }
-
-// SET PLAYERS
-await saveDirectoryPlayer(newPlayer);
 
 const alreadyAttended =
   attendance.some(
@@ -1810,10 +1782,9 @@ recordPartners(
 return {
   ...player,
 
-   // Auto-clear temporary flags
   priority: false,
   noPriority: false,
-  
+
   gamesPlayed:
     player.gamesPlayed + 1,
 
@@ -1833,7 +1804,7 @@ return {
   ),
 
   queueGroup: "matched",
-    
+  lastResult: won ? "win" : "loss",
 
   waitingSince: Date.now(),
 };
@@ -2354,28 +2325,6 @@ const activePlayers = courts.reduce(
   0
 );
 
-//unmatchedPlayers
-const unmatchedPlayers =
-  sortedPlayers.filter(
-    player =>
-      player.queueGroup ===
-      "unmatched"
-  );
-
-const winnerPlayers =
-  sortedPlayers.filter(
-    player =>
-      player.queueGroup ===
-      "winner"
-  );
-
-const loserPlayers =
-  sortedPlayers.filter(
-    player =>
-      player.queueGroup ===
-      "loser"
-  );
-
 //total players
 const totalPlayers =
   players.length + activePlayers;
@@ -2452,6 +2401,52 @@ const standings = directory
 
     return (b.wins || 0) - (a.wins || 0);
   });
+
+  //get standing ranks
+  const getStandingRank = (
+  standings,
+  index
+) => {
+
+  let rank = 1;
+
+  for (
+    let i = 1;
+    i <= index;
+    i++
+  ) {
+
+    const current =
+      standings[i];
+
+    const previous =
+      standings[i - 1];
+
+    const currentWinRate =
+      current.gamesPlayed > 0
+        ? current.wins /
+          current.gamesPlayed
+        : 0;
+
+    const previousWinRate =
+      previous.gamesPlayed > 0
+        ? previous.wins /
+          previous.gamesPlayed
+        : 0;
+
+    const tied =
+      currentWinRate === previousWinRate &&
+      current.wins === previous.wins &&
+      current.losses === previous.losses;
+
+    if (!tied) {
+      rank++;
+    }
+
+  }
+
+  return rank;
+};
 
 
 const getSessionStats = (
@@ -2700,12 +2695,12 @@ const renderPlayerRow = (
         L: {player.losses || 0}
       </div>
 
-      <div className="text-xs text-gray-500">
+ <div className="text-xs text-gray-500">
   Last Result:
   {" "}
-  {player.queueGroup === "winner"
+  {player.lastResult === "win"
     ? "✅ Win"
-    : player.queueGroup === "loser"
+    : player.lastResult === "loss"
     ? "❌ Loss"
     : "🆕 New"}
 </div>
@@ -3200,18 +3195,22 @@ const renderPlayerRow = (
   <h2 className="text-2xl font-bold">
     🏆 Standings
   </h2>
-<button
-  onClick={exportStandings}
-  className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm"
->
-  📤 Export CSV
-</button>
-  <button
-    onClick={clearStandings}
-    className="bg-orange-500 hover:bg-orange-600 text-white px-3 py-2 rounded text-sm"
-  >
-    🧹 Clear Standings
-  </button>
+
+  <div className="flex gap-2">
+    <button
+      onClick={exportStandings}
+      className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm"
+    >
+      📤 Export CSV
+    </button>
+
+    <button
+      onClick={clearStandings}
+      className="bg-orange-500 hover:bg-orange-600 text-white px-3 py-2 rounded text-sm"
+    >
+      🧹 Clear Standings
+    </button>
+  </div>
 
 </div>
 
@@ -3219,22 +3218,30 @@ const renderPlayerRow = (
     <p>No players available</p>
   ) : (
 
-standings.map((player, index) => {
+    standings.map((player, index) => {
 
   const sessionStats =
     getSessionStats(player.name);
 
+  const rank =
+    getStandingRank(
+      standings,
+      index
+    );
+
   return (
+
     <div
       key={player.id}
       className="flex justify-between border-b py-2"
     >
       <div>
         <strong>
-          {index === 0 && "🥇 "}
-          {index === 1 && "🥈 "}
-          {index === 2 && "🥉 "}
-          #{index + 1} {player.name}
+          {rank === 1 && "🥇 "}
+          {rank === 2 && "🥈 "}
+          {rank === 3 && "🥉 "}
+          #{rank} {player.name}
+
         </strong>
       </div>
 
@@ -3509,24 +3516,32 @@ WR: {
 
 {activeTab === "attendance" && (
   <div className="bg-white rounded-xl shadow p-4">
-    <div className="flex justify-between items-center mb-4">
-      <h2 className="text-2xl font-bold">
-        👥 Attendance
-      </h2>
-<button
-  onClick={exportAttendance}
-  className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm"
->
-  📤 Export CSV
-</button>
+  
+ <div className="flex flex-col md:flex-row justify-between items-center gap-2 mb-4">
 
-      <button
-        onClick={clearAttendanceRecords}
-        className="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded text-sm">
-        🧹 Reset Attendance
-      </button>
+  <h2 className="text-2xl font-bold">
+    👥 Attendance
+  </h2>
 
-    </div>
+  <div className="flex gap-2">
+
+    <button
+      onClick={exportAttendance}
+      className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm"
+    >
+      📤 Export CSV
+    </button>
+
+    <button
+      onClick={clearAttendanceRecords}
+      className="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded text-sm"
+    >
+      🧹 Reset Attendance
+    </button>
+
+  </div>
+
+</div>
 
 {attendanceLeaders.length > 0 && (
   //attendance champion
@@ -3868,28 +3883,34 @@ return (
 {/* MATCH HISTORY VIEW START */}
 {activeTab === "history" && (
   <div className="bg-white rounded-xl shadow p-4 mb-6">
-    <div className="flex justify-between items-center mb-6">
+
+    <div className="flex flex-col md:flex-row justify-between items-center gap-2 mb-6">
 
   <h2 className="text-2xl font-bold">
     📜 Match History ({matches.length} Total)
   </h2>
 
-<button
-  onClick={exportMatches}
-  className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm"
->
-  📤 Export CSV
-</button>
+  <div className="flex gap-2">
 
-  <button
-    onClick={clearHistory}
-    className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm"
-  >
-    🗑️ Clear All History
-  </button>
+    <button
+      onClick={exportMatches}
+      className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm"
+    >
+      📤 Export CSV
+    </button>
+
+    <button
+      onClick={clearHistory}
+      className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm"
+    >
+      🗑️ Clear All History
+    </button>
+
+  </div>
 
 </div>
-    {matches.length === 0 ? (
+  
+      {matches.length === 0 ? (
       <p>No matches recorded yet.</p>
     ) : (
 
