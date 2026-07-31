@@ -1,387 +1,436 @@
-Here's an updated version of your README that reflects the current state of **PickleStack v1.1**:
-
-````md
 # 🏓 PickleStack
 
-A pickleball session management system built with **React** and **Dexie (IndexedDB)**.
+PickleStack is a pickleball session management and court rotation system designed for recreational and club play.
 
-PickleStack helps organize recreational pickleball sessions by managing player check-ins, court assignments, match results, attendance, statistics, session history, and exports, all directly in the browser.
+It was built to solve common open-play problems:
 
-***
+- Players waiting too long
+- Unfair court assignments
+- Repeated teammates
+- Difficulty tracking attendance and match history
+- Manual session management
 
-## ✨ Features
+---
 
-### 🏠 Dashboard
+# ✨ Features
 
-* Player check-in system
-* Smart player queue management
-* Priority player support ⭐
-* Court management
-  * Add courts
-  * Remove courts
-* Manual player-to-court assignment
-* Automatic game setup
-* Drag & Drop support
-  * Queue → Court
-  * Court → Queue
-  * Court ↔ Court
-  * Queue ↔ Court swapping
-* Live court timers
-* Queue balancing based on:
-  * Priority status
-  * Games played
-  * Winner/Loser bracket
-  * Waiting time
-* Clear active courts and queue
+## Open Court Rotation
 
-### 🏆 Standings
+Any available court can be used by any group of players.
 
-* Lifetime player statistics
-* Wins
-* Losses
-* Games Played
-* Win Rate ranking
-* Current win streak
-* Best win streak
-* Medal placement for top players
-* Standings history snapshots per session
-* Clear standings without deleting player profiles
-* CSV export
+There are no "winner courts" or "loser courts".
 
-### 👥 Attendance
+Players are assigned fairly based on queue priority rather than court designation.
 
-* Automatic attendance tracking
-* Attendance leaderboard
-* Attendance Champion tracking 👑
-* Attendance percentage calculation
-* Session attendance history
-* Historical attendance review
-* Reset attendance records
-* CSV export
+---
 
-### 📜 Match History
+## Fair Queue System
 
-* Automatic match recording
-* Match duration tracking
-* Match winner editing
-* Session grouping
-* Session statistics
-  * Match count
-  * Player count
-  * Average match duration
-  * Longest match
-* Best session record tracking
-* Historical session review
-* Delete individual sessions
-* Clear complete history
-* CSV export
+Player selection follows this order:
 
-### 📚 Session Management
+1. Priority Players
+2. Unmatched Players First
+3. Lowest Games Played
+4. Longest Waiting Time
 
-* Session numbering
-* New Session workflow
-* Historical session preservation
-* Attendance history snapshots
-* Match history snapshots
-* Standings history snapshots
-* Prevent session changes while games are active
+This helps ensure everyone gets equal opportunities to play.
 
-### 👥 Player Directory
+---
 
-* Persistent player database
-* Player autocomplete
-* Permanent player storage
-* Delete saved players
-* Prevent duplicate check-ins
-* Priority status persistence
+## Smart Team Generation
 
-### 💾 Local Persistence
+When four players are selected:
 
-Data is stored locally using:
+- Partner history is checked
+- New partnerships are preferred
+- Repeated teammates are minimized
 
-* IndexedDB (Dexie)
-* LocalStorage
+---
 
-No backend required.
+## Attendance Tracking
 
-***
+Automatically records attendance for each session.
 
-## 🚀 Tech Stack
+Track:
 
-### Frontend
+- Session participation
+- Attendance champions
+- Historical attendance
 
-* React
-* JavaScript
-* TailwindCSS
+---
 
-### Storage
+## Match History
 
-* Dexie.js
-* IndexedDB
-* LocalStorage
+Stores:
 
-***
+- Teams
+- Winners
+- Court number
+- Match duration
+- Session
 
-## 📊 Queue Logic
+Provides a complete historical match record.
 
-Players are prioritized using:
+---
 
-### 1. Priority Players
+## Standings
 
-Priority players are always moved ahead of non-priority players.
+Tracks:
 
-### 2. Games Played
+- Games Played
+- Wins
+- Losses
+- Current Win Streak
+- Best Win Streak
 
-Players with fewer games are prioritized.
+---
 
-### 3. Match Result Bracket
+## CSV Export
 
-Priority:
+Export:
+
+- Standings
+- Attendance
+- Match History
+
+for external reporting and analysis.
+
+---
+
+# 🧠 Rotation Logic
+
+## Open Court Rotation
+
+The system assigns players to the first available empty court.
+
+No court is designated as a "winner" or "loser" court.
+
+---
+
+## Queue Selection Algorithm
+
+Implemented in:
+
+```javascript
+buildRotationGroup()
+```
+
+Priority order:
 
 ```text
-Winner Bracket
+Priority Flag
 ↓
-Normal
+Unmatched Players
 ↓
-Loser Bracket
-````
+Lowest Games Played
+↓
+Longest Waiting Time
+```
 
-### 4. Waiting Time
+Example:
 
-Players waiting the longest move up the queue.
+Player A
 
-***
+- 0 Games
+- Waiting 15 Minutes
 
-## 🏓 Match Flow
+Player B
 
-### Start Game
+- 2 Games
+- Waiting 20 Minutes
 
-1. Select 4 players from the queue
-2. Players are shuffled into teams
-3. Assigned to an empty court
-4. Court timer starts automatically
+Player A will be selected first because games played have higher priority than waiting time.
 
-### End Game
+---
 
-1. Winning team selected
-2. Match saved to history
-3. Statistics updated
-4. Players returned to queue
-5. Court becomes available
-6. Court timer stops
+## Unmatched Players First
 
-***
+Newly arrived players are assigned:
 
-## 🗂 Data Stored
+```javascript
+queueGroup: "unmatched"
+```
 
-### Player
+These players are always prioritized before players returning from completed matches.
 
-```json
+Example:
+
+Queue:
+
+P1-P8 (already played)
+
+P9-P12 (never played)
+
+System selects:
+
+```text
+P9
+P10
+P11
+P12
+```
+
+before reusing players who have already played.
+
+---
+
+## Partner Rotation System
+
+Implemented in:
+
+```javascript
+createBalancedTeams()
+```
+
+Partner history is stored in:
+
+```javascript
+partnerHistory
+```
+
+The system evaluates all valid team combinations.
+
+Example:
+
+```text
+P1
+P2
+P3
+P4
+```
+
+Possible Teams:
+
+A)
+
+P1 + P2
+
+P3 + P4
+
+B)
+
+P1 + P3
+
+P2 + P4
+
+C)
+
+P1 + P4
+
+P2 + P3
+
+The combination with the fewest previous partnerships is selected.
+
+---
+
+# ⚙️ Core Functions
+
+## Player Management
+
+### addPlayer()
+
+Adds a player to the current session.
+
+Responsibilities:
+
+- Validation
+- Duplicate prevention
+- Attendance registration
+- Queue insertion
+
+---
+
+### removePlayer()
+
+Removes a player from the waiting queue.
+
+---
+
+## Court Management
+
+### addCourt()
+
+Adds an additional court.
+
+---
+
+### removeCourt()
+
+Removes the newest court.
+
+Players are automatically returned to the queue.
+
+---
+
+### addPlayerToCourt()
+
+Manually places a player on a court.
+
+---
+
+### removeCourtPlayer()
+
+Removes a player from a court and returns them to the queue.
+
+---
+
+### moveCourtPlayer()
+
+Moves a player between courts.
+
+---
+
+## Match Management
+
+### assignPlayers()
+
+Selects four players using the rotation algorithm and assigns them to an available court.
+
+---
+
+### startNextGame()
+
+Starts the next available match.
+
+Uses:
+
+```javascript
+assignPlayers()
+```
+
+---
+
+### endGame()
+
+Completes a match.
+
+Updates:
+
+- Games played
+- Wins
+- Losses
+- Streaks
+- Match history
+- Partner history
+
+Returns players to the queue.
+
+---
+
+## Rotation Functions
+
+### buildRotationGroup()
+
+Creates the next group of four players.
+
+Selection order:
+
+```text
+Priority
+↓
+Unmatched
+↓
+Lowest Games
+↓
+Longest Waiting
+```
+
+---
+
+### createBalancedTeams()
+
+Determines the best team arrangement while avoiding repeated partners.
+
+---
+
+### recordPartners()
+
+Records teammate history after every completed match.
+
+---
+
+### sortPlayers()
+
+Sorts waiting players by:
+
+```text
+Priority
+↓
+Games Played
+↓
+Waiting Time
+```
+
+---
+
+# 📊 Data Tracked Per Player
+
+```javascript
 {
-  "id": "uuid",
-  "name": "Player Name",
-  "priority": false,
-  "gamesPlayed": 0,
-  "wins": 0,
-  "losses": 0,
-  "currentStreak": 0,
-  "bestStreak": 0,
-  "bracket": "normal",
-  "waitingSince": 0
+  id,
+  name,
+  gamesPlayed,
+  wins,
+  losses,
+  currentStreak,
+  bestStreak,
+  partnerHistory,
+  priority,
+  noPriority,
+  queueGroup,
+  waitingSince
 }
 ```
 
-### Match
+---
 
-```json
-{
-  "sessionId": 1,
-  "courtId": 1,
-  "teamA": ["Player A", "Player B"],
-  "teamB": ["Player C", "Player D"],
-  "winner": "A",
-  "startedAt": 0,
-  "endedAt": 0
-}
+# 🚀 Deployment
+
+Hosted on:
+
+```text
+Vercel
 ```
 
-***
+Frontend:
 
-## 🧹 Reset Options
-
-### 🧹 Clear Courts & Queue
-
-Clears:
-
-* Waiting queue
-* Active courts
-* Court timers
-
-Keeps:
-
-* Player directory
-* Attendance
-* Standings
-* Match history
-* Session history
-
-***
-
-### ➡️ New Session
-
-Creates a new session while preserving:
-
-* Match history
-* Attendance history
-* Standings history
-
-Resets:
-
-* Queue
-* Courts
-* Current session statistics
-
-***
-
-### 🏆 Clear Standings
-
-Resets:
-
-* Wins
-* Losses
-* Games Played
-* Current streak
-* Best streak
-* Brackets
-
-Keeps:
-
-* Player directory
-
-***
-
-### ☢️ Factory Reset
-
-Permanently removes:
-
-* Player directory
-* Attendance records
-* Match history
-* Standings history
-* Session history
-* Active courts
-* Queue
-
-Returns the application to a fresh installation state.
-
-***
-
-## 📤 Export Features
-
-* Export Standings CSV
-* Export Attendance CSV
-* Export Match History CSV
-
-***
-
-## 📱 Install on Phone
-
-### Android
-
-Chrome → Install App
-
-### iPhone
-
-Safari → Share → Add to Home Screen
-
-***
-
-## 📦 Installation
-
-```bash
-git clone https://github.com/yourusername/picklestack.git
-
-cd picklestack
-
-npm install
-
-npm run dev
+```text
+React
 ```
 
-***
+Build Tool:
 
-## 🏗 Build
-
-```bash
-npm run build
+```text
+Vite
 ```
 
-***
+Storage:
 
-## 🎯 Future Enhancements
+```text
+IndexedDB
+```
 
-* Undo Last Match
-* King of the Court Mode
-* Match Scoring
-* ELO Ranking System
-* Doubles Partner Statistics
-* Cloud Synchronization
-* Multi-Device Support
-* Dark Mode
+---
 
-***
+# 🔮 Future Improvements
 
-## 📄 License
+- Player wait-time display
+- Rotation explanation panel
+- Partner history viewer
+- Player profile page
+- Session analytics dashboard
+- Data backup/import/export
+- Tournament mode
+- Mobile-first drag-and-drop improvements
+
+---
+
+# 📜 License
 
 MIT License
 
-***
+Feel free to use, modify, and distribute.
 
-## 👨‍💻 Author
+---
 
-**RNL**
-
-Built as a personal project to simplify pickleball session management and player rotation.
-
-**PickleStack v1.1** 🏓✨
-
-## 🚀 Version 1.1 Highlights
-
-✅ Priority Players
-
-✅ Drag & Drop Court Management
-
-✅ Queue ↔ Court Swapping
-
-✅ Court ↔ Court Swapping
-
-✅ Live Court Timers
-
-✅ Attendance Tracking
-
-✅ Attendance History
-
-✅ Attendance Champion
-
-✅ Standings History
-
-✅ Match History by Session
-
-✅ Match Winner Editing
-
-✅ Current & Best Win Streaks
-
-✅ Session Management
-
-✅ CSV Export Functions
-
-✅ Persistent Player Directory
-
-✅ Factory Reset
-
-✅ Automatic Queue Balancing
-
-✅ Local Persistence with IndexedDB & LocalStorage
-
-
-
+Built with ❤️ for the pickleball community.
