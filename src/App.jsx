@@ -920,6 +920,32 @@ const createBalancedTeams = (
         score += 1000;
       }
 
+      const teamA = [
+  players[combo[0][0]],
+  players[combo[0][1]],
+];
+
+const teamB = [
+  players[combo[1][0]],
+  players[combo[1][1]],
+];
+
+teamA.forEach((playerA) => {
+
+  teamB.forEach((playerB) => {
+
+    if (
+      playerA.lastOpponents?.includes(
+        playerB.id
+      )
+    ) {
+      score += 100;
+    }
+
+  });
+
+});
+
       if (
         score < bestScore
       ) {
