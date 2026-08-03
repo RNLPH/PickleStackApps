@@ -1008,6 +1008,42 @@ const eligiblePlayers = (
   );
 };
 
+//reset rested players
+const resetRestedPlayers = (
+  playerList,
+  selectedIds
+) => {
+
+  return playerList.map(
+    player => {
+
+      const wasSelected =
+        selectedIds.includes(
+          player.id
+        );
+
+      if (wasSelected) {
+        return player;
+      }
+
+      if (
+        (player.consecutiveGames || 0)
+        >= 2
+      ) {
+
+        return {
+          ...player,
+          consecutiveGames: 0,
+        };
+
+      }
+
+      return player;
+
+    }
+  );
+
+};
 
 //LoserPlayers
 const getLoserPlayers = (
@@ -1194,6 +1230,9 @@ if (existingDirectoryPlayer) {
     consecutiveGames:
   existingDirectoryPlayer.consecutiveGames ?? 0,
 
+  restedOnce:
+  existingDirectoryPlayer.restedOnce ?? false,
+
 lastPartnerId:
   existingDirectoryPlayer.lastPartnerId ?? null,
 
@@ -1224,6 +1263,7 @@ else {
   id: crypto.randomUUID(),
   name: trimmedName,
   consecutiveGames: 0,
+  restedOnce: false,
   lastPartnerId: null,
   lastOpponents: [],
   priority: false,
@@ -1355,9 +1395,13 @@ const removeCourtPlayer = (courtId, playerId) => {
     sortPlayers([
       ...prev,
       {
-        ...player,
-        waitingSince: Date.now(),
-      },
+  ...player,
+  consecutiveGames: Math.max(
+    0,
+    (player.consecutiveGames || 0) - 1
+  ),
+  waitingSince: Date.now(),
+},
     ])
   );
 
@@ -1429,9 +1473,15 @@ const swapQueueAndCourtPlayer = (
       ),
 
       {
-        ...courtPlayer,
-        waitingSince: Date.now(),
-      },
+  ...courtPlayer,
+
+  consecutiveGames: Math.max(
+    0,
+    (courtPlayer.consecutiveGames || 0) - 1
+  ),
+
+  waitingSince: Date.now(),
+},
     ])
   );
 
@@ -1557,9 +1607,13 @@ return {
       sortPlayers([
         ...prev,
         {
-          ...playerToMove,
-          waitingSince: Date.now(),
-        },
+  ...playerToMove,
+  consecutiveGames: Math.max(
+    0,
+    (playerToMove.consecutiveGames || 0) - 1
+  ),
+  waitingSince: Date.now(),
+},
       ])
     );
   }
@@ -1786,10 +1840,21 @@ const selectedPlayers =
 
   }));
 
-  const teams =
-    createBalancedTeams(
-      selectedPlayers
-    );
+ const teams =
+  createBalancedTeams(
+
+    selectedPlayers.map(
+      player => ({
+        ...player,
+
+        consecutiveGames:
+          (
+            player.consecutiveGames || 0
+          ) + 1,
+      })
+    )
+
+  );
 
   setCourts(prev =>
     prev.map(court =>
@@ -1870,10 +1935,21 @@ const assignPlayersToAllCourts = () => {
         return court;
       }
 
-      const teams =
-        createBalancedTeams(
-          selectedPlayers
-        );
+    const teams =
+  createBalancedTeams(
+
+    selectedPlayers.map(
+      player => ({
+        ...player,
+
+        consecutiveGames:
+          (
+            player.consecutiveGames || 0
+          ) + 1,
+      })
+    )
+
+  );
 
       const selectedIds =
         teams.map(
@@ -1898,9 +1974,22 @@ const assignPlayersToAllCourts = () => {
 
   setCourts(updatedCourts);
 
-  setPlayers(
-    availablePlayers
-  );
+  const selectedIds =
+  updatedCourts
+    .flatMap(
+      court =>
+        court.players || []
+    )
+    .map(
+      player => player.id
+    );
+
+setPlayers(
+  resetRestedPlayers(
+    availablePlayers,
+    selectedIds
+  )
+);
 
 };
 
@@ -1986,7 +2075,7 @@ recordOpponents(
 
 return {
   ...player,
-  consecutiveGames: 0,
+  consecutiveGames: player.consecutiveGames || 0,
   priority: false,
   noPriority: false,
 
@@ -2899,6 +2988,11 @@ const renderPlayerRow = (
         W: {player.wins || 0} |
         L: {player.losses || 0}
       </div>
+
+<div className="text-xs text-blue-500">
+  Consecutive:
+  {player.consecutiveGames || 0}
+</div>
 
  <div className="text-xs text-gray-500">
   Last Result:
