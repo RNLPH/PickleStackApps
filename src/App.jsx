@@ -355,44 +355,14 @@ useEffect(() => {
 
 
   // ===== PLAYER SORTING =====
-const sortPlayers = (
+  const sortPlayers = (
   playerList
 ) => {
 
   return [...playerList].sort(
     (a, b) => {
 
-      // Manual priority
-      if (
-        a.priority &&
-        !b.priority
-      ) {
-        return -1;
-      }
-
-      // Late arrivals go last
-if (
-  a.noPriority &&
-  !b.noPriority
-) {
-  return 1;
-}
-
-if (
-  !a.noPriority &&
-  b.noPriority
-) {
-  return -1;
-}
-
-      if (
-        !a.priority &&
-        b.priority
-      ) {
-        return 1;
-      }
-
-      // Fewer games first
+      // Lowest games first
       if (
         a.gamesPlayed !==
         b.gamesPlayed
@@ -403,11 +373,18 @@ if (
         );
       }
 
-      // Longest waiting first
-      return (
-        a.waitingSince -
+      // Longest wait first
+      if (
+        a.waitingSince !==
         b.waitingSince
-      );
+      ) {
+        return (
+          a.waitingSince -
+          b.waitingSince
+        );
+      }
+
+      return 0;
     }
   );
 };
@@ -867,7 +844,7 @@ if (
 
 };
 
-//createBalancedTeams 
+
 const getPartnerCount = (
   playerA,
   playerB
@@ -880,6 +857,7 @@ const getPartnerCount = (
   );
 };
 
+//createBalancedTeams
 const createBalancedTeams = (
   players
 ) => {
@@ -902,29 +880,45 @@ const createBalancedTeams = (
   let bestCombo = null;
 
   combinations.forEach(
-    combo => {
+    (combo) => {
 
-      const score =
+      let score =
 
         getPartnerCount(
-          players[
-            combo[0][0]
-          ],
-          players[
-            combo[0][1]
-          ]
+          players[combo[0][0]],
+          players[combo[0][1]]
         )
 
         +
 
         getPartnerCount(
-          players[
-            combo[1][0]
-          ],
-          players[
-            combo[1][1]
-          ]
+          players[combo[1][0]],
+          players[combo[1][1]]
         );
+
+      // Prevent repeat partners
+
+      if (
+        players[
+          combo[0][0]
+        ].lastPartnerId ===
+        players[
+          combo[0][1]
+        ].id
+      ) {
+        score += 1000;
+      }
+
+      if (
+        players[
+          combo[1][0]
+        ].lastPartnerId ===
+        players[
+          combo[1][1]
+        ].id
+      ) {
+        score += 1000;
+      }
 
       if (
         score < bestScore
@@ -932,6 +926,7 @@ const createBalancedTeams = (
         bestScore = score;
         bestCombo = combo;
       }
+
     }
   );
 
@@ -954,6 +949,7 @@ const createBalancedTeams = (
     ],
 
   ];
+
 };
 
 //buildRotationGroup
@@ -962,66 +958,30 @@ const buildRotationGroup = (
 ) => {
 
   return [...playerList]
-    .sort((a, b) => {
-
-      // Priority players first
-      if (a.priority && !b.priority) {
-        return -1;
-      }
-
-      if (!a.priority && b.priority) {
-        return 1;
-      }
-
-      // Late arrivals go last
-      if (
-        a.noPriority &&
-        !b.noPriority
-      ) {
-        return 1;
-      }
-
-      if (
-        !a.noPriority &&
-        b.noPriority
-      ) {
-        return -1;
-      }
-
-      // Unmatched first
-      if (
-        a.queueGroup === "unmatched" &&
-        b.queueGroup !== "unmatched"
-      ) {
-        return -1;
-      }
-
-      if (
-        a.queueGroup !== "unmatched" &&
-        b.queueGroup === "unmatched"
-      ) {
-        return 1;
-      }
-
-      // Lowest games first
-      if (
-        a.gamesPlayed !==
-        b.gamesPlayed
-      ) {
-        return (
-          a.gamesPlayed -
-          b.gamesPlayed
-        );
-      }
-
-      // Longest waiting first
-      return (
-        a.waitingSince -
-        b.waitingSince
-      );
-    })
+    .sort(
+      (
+        a,
+        b
+      ) =>
+        getQueueScore(b) -
+        getQueueScore(a)
+    )
     .slice(0, 4);
 };
+
+//eligiblePlayers
+const eligiblePlayers = (
+  players
+) => {
+
+  return players.filter(
+    player =>
+      (
+        player.consecutiveGames || 0
+      ) < 2
+  );
+};
+
 
 //LoserPlayers
 const getLoserPlayers = (
@@ -1030,6 +990,57 @@ const getLoserPlayers = (
   return playerList.filter(
     player =>
       player.queueGroup === "loser"
+  );
+};
+
+//buildPools
+const buildPools = (
+  playerList
+) => {
+
+  return {
+
+    winners:
+      playerList.filter(
+        p =>
+          p.lastResult === "win"
+      ),
+
+    losers:
+      playerList.filter(
+        p =>
+          p.lastResult === "loss"
+      ),
+
+    unmatched:
+      playerList.filter(
+        p =>
+          !p.lastResult
+      ),
+  };
+};
+
+const getQueueScore = (
+  player
+) => {
+
+  const winnerBonus =
+    player.lastResult === "win"
+      ? 20
+      : 0;
+
+  const waitBonus =
+    Math.floor(
+      (
+        Date.now() -
+        player.waitingSince
+      ) / 60000
+    );
+
+  return (
+    player.gamesPlayed * -100 +
+    winnerBonus +
+    waitBonus
   );
 };
 
@@ -1059,6 +1070,40 @@ const recordPartners = (
         ] || 0
       ) + 1,
   };
+
+  // NEW
+  playerA.lastPartnerId =
+    playerB.id;
+
+  playerB.lastPartnerId =
+    playerA.id;
+
+};
+
+
+//recordOpponents
+const recordOpponents = (
+  teamA,
+  teamB
+) => {
+
+  teamA.forEach(a => {
+
+    a.lastOpponents =
+      teamB.map(
+        p => p.id
+      );
+
+  });
+
+  teamB.forEach(b => {
+
+    b.lastOpponents =
+      teamA.map(
+        p => p.id
+      );
+
+  });
 };
 
 
@@ -1119,6 +1164,15 @@ if (existingDirectoryPlayer) {
 
   newPlayer = {
     ...existingDirectoryPlayer,
+    
+    consecutiveGames:
+  existingDirectoryPlayer.consecutiveGames ?? 0,
+
+lastPartnerId:
+  existingDirectoryPlayer.lastPartnerId ?? null,
+
+lastOpponents:
+  existingDirectoryPlayer.lastOpponents ?? [],
 
     partnerHistory:
       existingDirectoryPlayer.partnerHistory || {},
@@ -1143,6 +1197,9 @@ else {
  newPlayer = {
   id: crypto.randomUUID(),
   name: trimmedName,
+  consecutiveGames: 0,
+  lastPartnerId: null,
+  lastOpponents: [],
   priority: false,
   noPriority: false,
   gamesPlayed: 0,
@@ -1222,20 +1279,30 @@ const removePlayer = (id) => {
 };
 
 // ===== COURT ACTIONS =====
-  const addCourt = () => {
-    setCourts((prev) => {
-      const nextId =
-        Math.max(...prev.map((court) => court.id), 0) + 1;
+const addCourt = () => {
 
-      return [
-        ...prev,
-       {
-  id: nextId,
-  players: [],
-},
-      ];
-    });
-  };
+  setCourts((prev) => {
+
+    const nextId =
+      Math.max(
+        ...prev.map(
+          (court) => court.id
+        ),
+        0
+      ) + 1;
+
+    return [
+      ...prev,
+      {
+        id: nextId,
+        players: [],
+      },
+    ];
+
+  });
+
+
+};
 
 const removeCourtPlayer = (courtId, playerId) => {
   const court = courts.find(
@@ -1644,11 +1711,22 @@ return {
 
 
 const startNextGame = () => {
-  assignPlayers();
+  assignPlayersToAllCourts();
 };
 
   //assign players
 const assignPlayers = () => {
+
+  console.log("===== ASSIGN PLAYERS =====");
+
+console.table(
+  players.map((p) => ({
+    name: p.name,
+    gamesPlayed: p.gamesPlayed,
+    consecutiveGames: p.consecutiveGames,
+    lastResult: p.lastResult,
+  }))
+);
 
   const emptyCourt =
     courts.find(
@@ -1669,7 +1747,18 @@ const assignPlayers = () => {
   }
 
 const selectedPlayers =
-  buildRotationGroup(players);
+  buildRotationGroup(
+    eligiblePlayers(players)
+  ).map(player => ({
+
+    ...player,
+
+    consecutiveGames:
+      (
+        player.consecutiveGames || 0
+      ) + 1,
+
+  }));
 
   const teams =
     createBalancedTeams(
@@ -1703,6 +1792,91 @@ const selectedPlayers =
   );
 };
 
+
+//assignPlayersToAllCourts
+const assignPlayersToAllCourts = () => {
+
+  const emptyCourts =
+    courts.filter(
+      court =>
+        court.players.length === 0
+    );
+
+  if (
+    emptyCourts.length === 0
+  ) {
+    alert(
+      "No empty court available."
+    );
+    return;
+  }
+
+  let availablePlayers =
+    [...players];
+
+  const updatedCourts =
+    courts.map((court) => {
+
+      // Skip occupied courts
+      if (
+        court.players.length > 0
+      ) {
+        return court;
+      }
+
+      // Not enough players left
+      if (
+        availablePlayers.length < 4
+      ) {
+        return court;
+      }
+
+      const selectedPlayers =
+        buildRotationGroup(
+          eligiblePlayers(
+            availablePlayers
+          )
+        );
+
+      if (
+        selectedPlayers.length < 4
+      ) {
+        return court;
+      }
+
+      const teams =
+        createBalancedTeams(
+          selectedPlayers
+        );
+
+      const selectedIds =
+        teams.map(
+          player => player.id
+        );
+
+      availablePlayers =
+        availablePlayers.filter(
+          player =>
+            !selectedIds.includes(
+              player.id
+            )
+        );
+
+      return {
+        ...court,
+        players: teams,
+        startedAt: Date.now(),
+      };
+
+    });
+
+  setCourts(updatedCourts);
+
+  setPlayers(
+    availablePlayers
+  );
+
+};
 
 //end game
 
@@ -1766,6 +1940,11 @@ recordPartners(
   court.players[3]
 );
 
+recordOpponents(
+  court.players.slice(0,2),
+  court.players.slice(2,4)
+);
+
 
   const returningPlayers = court.players.map(
     (player, index) => {
@@ -1781,7 +1960,7 @@ recordPartners(
 
 return {
   ...player,
-
+  consecutiveGames: 0,
   priority: false,
   noPriority: false,
 
