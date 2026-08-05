@@ -38,43 +38,27 @@ function DraggablePlayer({ player }) {
     },
   });
 
-const style = {
-  transform: transform
-    ? `translate3d(
-        ${transform.x}px,
-        ${transform.y}px,
-        0
-      )`
-    : undefined,
+  const style = {
+    transform: transform
+      ? `translate3d(
+          ${transform.x}px,
+          ${transform.y}px,
+          0
+        )`
+      : undefined,
+  };
 
-  zIndex: transform ? 9999 : 1,
-  position: "relative",
-};
-
-return (
-  <div
-    ref={setNodeRef}
-    style={style}
-    {...listeners}
-    {...attributes}
-    className="
-      w-10
-      h-10
-      rounded-full
-      bg-blue-500
-      text-white
-      flex
-      items-center
-      justify-center
-      font-bold
-      cursor-grab
-      hover:scale-105
-      transition-all
-    "
-  >
-    {player.name.charAt(0).toUpperCase()}
-  </div>
-);
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...listeners}
+      {...attributes}
+      className="cursor-grab"
+    >
+      {player.name}
+    </div>
+  );
 }
 
 //Dropable court function
@@ -195,59 +179,45 @@ function DraggableCourtPlayer({
   };
 
 return (
-<div
-  ref={setNodeRef}
-  style={style}
-  {...listeners}
-  {...attributes}
-  className="
-    flex
-    flex-col
-    items-center
-    justify-center
-    text-center
-    cursor-grab
-    w-full
-    py-1
-  "
->
   <div
-    className={`
-      w-7
-      h-7
-      rounded-full
+    ref={setNodeRef}
+    style={style}
+    {...listeners}
+    {...attributes}
+    className="
       flex
       items-center
-      justify-center
-      text-white
-      text-xs
-      font-bold
-      ${
-        color === "purple"
-          ? "bg-purple-500"
-          : "bg-blue-500"
-      }
-    `}
+      gap-3
+      cursor-grab
+      w-full
+    "
   >
-    {player.name.charAt(0).toUpperCase()}
-  </div>
 
-<div className="mt-1">
-  <span
-    className="
-    block
-    text-xs
-    font-semibold
-    text-center
-    capitalize
-    break-words
-  "
-    title={player.name}
-  >
-    {player.name}
-  </span>
+    <div
+      className={`
+        w-8
+        h-8
+        rounded-full
+        flex
+        items-center
+        justify-center
+        text-white
+        text-xs
+        font-bold
+        ${
+          color === "purple"
+            ? "bg-purple-500"
+            : "bg-blue-500"
+        }
+      `}
+    >
+      {player.name.charAt(0).toUpperCase()}
+    </div>
 
-</div>
+  <span className="font-medium capitalize">
+  {player.name}
+</span>
+
   </div>
 );
 }
@@ -3029,33 +2999,18 @@ const renderPlayerRow = (
     shadow-sm
     hover:shadow-md
     transition-all
-    hover:-translate-y-1
   "
 >
     <div>
-    <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
+        <span>
+          {index + 1}.
+        </span>
 
-  <DraggablePlayer
-    player={player}
-  />
-
-  <div>
-
-    <div className="font-semibold text-slate-800">
-      {player.name}
-    </div>
-
-    <div className="text-xs text-gray-500">
-      #{index + 1} in queue
-    </div>
-
-<div className="text-xs text-blue-500 mt-1">
-  ⏳ {getRelativeTime(player.waitingSince)}
-</div>
-
-  </div>
-
-</div>
+        <DraggablePlayer
+          player={player}
+        />
+      </div>
 
       <div className="flex gap-2 mt-3 flex-wrap">
 
@@ -3094,43 +3049,34 @@ const renderPlayerRow = (
 
 </div>
 
-<div className="flex items-center gap-3 mt-2 text-xs">
+<div className="mt-2 text-xs text-orange-500 font-medium">
+  🔥 {player.consecutiveGames || 0} consecutive
+</div>
 
-  <span className="text-orange-500">
-    🔥 {player.consecutiveGames || 0}
-  </span>
+<div className="text-xs mt-1">
 
   {player.lastResult === "win" && (
     <span className="text-green-600">
-      ✅ Won
+      ✅ Last Match Won
     </span>
   )}
 
   {player.lastResult === "loss" && (
     <span className="text-red-600">
-      ❌ Lost
+      ❌ Last Match Lost
     </span>
   )}
 
   {!player.lastResult && (
     <span className="text-gray-500">
-      🆕 New
+      🆕 New Player
     </span>
   )}
 
 </div>
 
       {player.priority && (
-        <div
-  className="
-    flex
-    gap-2
-    mt-3
-    pt-3
-    border-t
-    border-slate-200
-  "
->
+        <div className="text-yellow-600 font-bold text-xs">
           ⭐ PRIORITY
         </div>
       )}
@@ -3155,19 +3101,7 @@ const renderPlayerRow = (
             [player.id]: e.target.value,
           }))
         }
-        className="
-w-full
-border
-border-slate-200
-rounded-lg
-px-3
-py-2
-text-sm
-bg-white
-focus:outline-none
-focus:ring-2
-focus:ring-blue-400
-"
+        className="border rounded px-2 py-1 text-sm"
       >
         <option value="">
           Select Court
@@ -3184,16 +3118,7 @@ focus:ring-blue-400
         ))}
       </select>
 
-      <div
-  className="
-    flex
-    gap-2
-    mt-3
-    pt-3
-    border-t
-    border-slate-100
-  "
->
+      <div className="flex gap-1">
 
         <button
           onClick={async () => {
@@ -3250,20 +3175,11 @@ focus:ring-blue-400
     });
 
   }}
- className={`
-w-9
-h-9
-rounded-lg
-flex
-items-center
-justify-center
-transition-all
-${
-  player.noPriority
-    ? "bg-orange-500 text-white"
-    : "bg-slate-100 hover:bg-slate-200"
-}
-`}
+  className={`px-2 py-1 rounded text-sm ${
+    player.noPriority
+      ? "bg-orange-500 text-white"
+      : "bg-gray-200"
+  }`}
 >
   🚫
 </button>
@@ -3289,17 +3205,7 @@ ${
               courtId
             );
           }}
-          className="
-w-9
-h-9
-rounded-lg
-flex
-items-center
-justify-center
-bg-green-500
-text-white
-hover:bg-green-600
-"
+          className="bg-green-500 text-white px-2 py-1 rounded text-sm"
         >
           ➕
         </button>
@@ -3310,17 +3216,7 @@ hover:bg-green-600
               player.id
             )
           }
-          className="
-w-9
-h-9
-rounded-lg
-flex
-items-center
-justify-center
-bg-red-500
-text-white
-hover:bg-red-600
-"
+          className="bg-red-500 text-white px-2 py-1 rounded text-sm"
         >
           ✕
         </button>
@@ -3330,33 +3226,13 @@ hover:bg-red-600
   </div>
 );
 
-const actionButton = `
-h-11
-px-4
-rounded-lg
-font-medium
-text-white
-transition-all
-shadow-sm
-hover:shadow-md
-hover:-translate-y-0.5
-`;
-
   return (
     
 
+    
+
     /* ===== APP CONTAINER START ===== */
-    <div
-  className="
-    min-h-screen
-    bg-gradient-to-br
-    from-slate-100
-    via-blue-50
-    to-purple-50
-    p-3
-    md:p-6
-  "
->
+    <div className="min-h-screen bg-slate-100 p-3 md:p-6">
 
      {/* ===== PAGE CONTAINER START ===== */}
       <div className="max-w-7xl mx-auto w-full">
@@ -3376,6 +3252,9 @@ hover:-translate-y-0.5
   <h1 className="text-4xl font-bold">
     🏓 PickleStack
   </h1>
+  <div className="mt-2 text-sm">
+    Session #{sessionId}
+  </div>
 </div>
 
         <div className="text-center mb-6">
@@ -3394,27 +3273,11 @@ hover:-translate-y-0.5
     onClick={() =>
       setActiveTab("dashboard")
     }
-   className={`
-h-11
-rounded-lg
-font-medium
-transition-all
-shadow-sm
-hover:shadow-md
-${
-  activeTab === "dashboard"
-    ? `
-      bg-blue-600
-      text-white
-    `
-    : `
-      bg-white
-      border
-      border-slate-200
-      hover:bg-slate-50
-    `
-}
-`}
+    className={`px-4 py-2 rounded ${
+      activeTab === "dashboard"
+        ? "bg-blue-600 text-white"
+        : "bg-white"
+    }`}
   >
     🏠 Dashboard
   </button>
@@ -3424,27 +3287,11 @@ ${
     onClick={() =>
       setActiveTab("standings")
     }
-    className={`
-h-11
-rounded-lg
-font-medium
-transition-all
-shadow-sm
-hover:shadow-md
-${
-  activeTab === "standings"
-    ? `
-      bg-blue-600
-      text-white
-    `
-    : `
-      bg-white
-      border
-      border-slate-200
-      hover:bg-slate-50
-    `
-}
-`}
+    className={`px-4 py-2 rounded ${
+      activeTab === "standings"
+        ? "bg-blue-600 text-white"
+        : "bg-white"
+    }`}
   >
     🏆 Standings
   </button>
@@ -3454,27 +3301,11 @@ ${
   onClick={() =>
     setActiveTab("attendance")
   }
- className={`
-h-11
-rounded-lg
-font-medium
-transition-all
-shadow-sm
-hover:shadow-md
-${
-  activeTab === "attendance"
-    ? `
-      bg-blue-600
-      text-white
-    `
-    : `
-      bg-white
-      border
-      border-slate-200
-      hover:bg-slate-50
-    `
-}
-`}
+  className={`px-4 py-2 rounded ${
+    activeTab === "attendance"
+      ? "bg-blue-600 text-white"
+      : "bg-white"
+  }`}
 >
   👥 Attendance
 </button>
@@ -3485,27 +3316,11 @@ ${
     onClick={() =>
       setActiveTab("history")
     }
-   className={`
-h-11
-rounded-lg
-font-medium
-transition-all
-shadow-sm
-hover:shadow-md
-${
-  activeTab === "history"
-    ? `
-      bg-blue-600
-      text-white
-    `
-    : `
-      bg-white
-      border
-      border-slate-200
-      hover:bg-slate-50
-    `
-}
-`}
+    className={`px-4 py-2 rounded ${
+      activeTab === "history"
+        ? "bg-blue-600 text-white"
+        : "bg-white"
+    }`}
   >
     📜Match History
   </button>
@@ -3514,31 +3329,8 @@ ${
 
         {activeTab === "dashboard" && (
           
-<div className="
-  bg-white
-  rounded-2xl
-  shadow-md
-  border
-  border-slate-200
-  p-4
-  mb-6
-">
-
-  <h2 className="
-    text-lg
-    font-bold
-    text-slate-700
-    mb-3
-  ">
-    🎮 Session Controls
-  </h2>
-
-  <div className="
-    grid
-    grid-cols-2
-    md:grid-cols-4
-    gap-2
-  ">
+          <div className="bg-white rounded-xl shadow p-4 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
 
          
 <div className="relative flex-1">
@@ -3603,19 +3395,7 @@ ${
   }
 }}
 
-    className="
-w-full
-h-11
-px-4
-rounded-lg
-border
-border-slate-200
-bg-white
-shadow-sm
-focus:outline-none
-focus:ring-2
-focus:ring-blue-400
-"
+    className="border rounded p-2 w-full"
   />
 
   {matchingPlayers.length > 0 &&
@@ -3705,20 +3485,16 @@ focus:ring-blue-400
             
 
             <button
-  onClick={addPlayer}
-  className={`${actionButton}
-    bg-green-500
-    hover:bg-green-600`}
->
+              onClick={addPlayer}
+              className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded"
+            >
               Add Player
             </button>
 
             
             <button
   onClick={startNextGame}
-  className={`${actionButton}
-  bg-blue-500
-  hover:bg-blue-600`}
+  className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
 >
   Start Game
 </button>
@@ -3726,18 +3502,14 @@ focus:ring-blue-400
 
             <button
               onClick={addCourt}
-              className={`${actionButton}
-  bg-purple-500
-  hover:bg-purple-600`}
+              className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded"
             >
               + Court
             </button>
 
             <button
               onClick={removeCourt}
-              className={`${actionButton}
-  bg-red-500
-  hover:bg-red-600`}
+              className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded"
             >
               - Court
             </button>
@@ -3745,27 +3517,21 @@ focus:ring-blue-400
 
 <button
   onClick={startNewSession}
-  className={`${actionButton}
-  bg-indigo-600
-  hover:bg-indigo-700`}
+  className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded"
 >
   ➡️ New Session
 </button>
 
 <button
   onClick={resetSession}
-  className={`${actionButton}
-  bg-amber-500
-  hover:bg-amber-600`}
+  className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded"
 >
   🔄 Restart Current Session
 </button>
 
 <button
   onClick={factoryReset}
- className={`${actionButton}
-  bg-slate-700
-  hover:bg-slate-800`}
+  className="bg-red-700 hover:bg-red-800 text-white px-4 py-2 rounded"
 >
   ☢️ Factory Reset
 </button>
@@ -4803,9 +4569,7 @@ return (
   onDragEnd={handleDragEnd}
 >
 
-<div className="grid lg:grid-cols-12 gap-6">
-  
-  <div className="lg:col-span-4">
+<div className="grid md:grid-cols-3 gap-6">
   <DroppableQueue>
           <div className="bg-white rounded-xl shadow p-4">
 
@@ -4820,8 +4584,12 @@ return (
             {sortedPlayers.length === 0 ? (
               <p>No players waiting</p>
             ) : (
+         <div className="mb-4">
+  <h3 className="font-bold text-blue-600 mb-2">
+    ⏳ WAITING PLAYERS
+    ({waitingPlayers.length})
+  </h3>
 
-<div className="space-y-3">
   {waitingPlayers.map(
     (player, index) =>
       renderPlayerRow(
@@ -4830,13 +4598,11 @@ return (
       )
   )}
 </div>
-
             )}
           </div>
 </DroppableQueue>
-</div>
-          <div className="lg:col-span-8">
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+          <div className="md:col-span-2">
+            <div className="grid md:grid-cols-2 gap-4">
               
               {courts.map((court) => (
 
@@ -4855,7 +4621,6 @@ return (
  border-slate-200
  hover:shadow-xl
  transition-all
- hover:-translate-y-1
  "
 >
 <div className="
@@ -4963,7 +4728,8 @@ text-gray-400
       🟣 Team B
     </span>
   </div>
-<div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+<div className="grid grid-cols-2 gap-3">
+  
   
   <div>
  <span
@@ -4985,9 +4751,9 @@ text-gray-400
   .filter(Boolean)
   .slice(0, 2)
   .map((player) => (
-  <div
+       <div
   key={player.id}
-  className="
+className="
 bg-white
 border-l-4
 border-blue-500
@@ -4995,38 +4761,29 @@ p-3
 rounded-lg
 mb-2
 flex
+justify-between
 items-center
 shadow-sm
-min-h-[72px]
 "
->  
-<div className="flex-1 min-w-0">
-  <DroppableCourtPlayer
-    player={player}
-  >
-    <DraggableCourtPlayer
-      player={player}
-    />
-  </DroppableCourtPlayer>
-</div>
-
-<button
-  onClick={() =>
-    removeCourtPlayer(
-      court.id,
-      player.id
-    )
-  }
-  className="
-    ml-2
-    flex-shrink-0
-    text-red-600
-    font-bold
-  "
 >
-  ✕
-</button>
-
+<DroppableCourtPlayer
+  player={player}
+>
+  <DraggableCourtPlayer
+    player={player}
+  />
+</DroppableCourtPlayer>
+  <button
+    onClick={() =>
+      removeCourtPlayer(
+        court.id,
+        player.id
+      )
+    }
+    className="text-red-600 font-bold"
+  >
+    ✕
+  </button>
 </div>
 
       ))}
@@ -5053,7 +4810,7 @@ min-h-[72px]
   .slice(2, 4)
   .map((player) => (
 
-<div
+     <div
   key={player.id}
   className="
 bg-white
@@ -5063,40 +4820,32 @@ p-3
 rounded-lg
 mb-2
 flex
+justify-between
 items-center
 shadow-sm
-min-h-[72px]
 "
+
 >
-  
-<div className="flex-1 min-w-0">
   <DroppableCourtPlayer
-    player={player}
-  >
-    <DraggableCourtPlayer
-      player={player}
-      color="purple"
-    />
-  </DroppableCourtPlayer>
-</div>
-
-<button
-  onClick={() =>
-    removeCourtPlayer(
-      court.id,
-      player.id
-    )
-  }
-  className="
-    ml-2
-    flex-shrink-0
-    text-red-600
-    font-bold
-  "
+  player={player}
 >
-  ✕
-</button>
+  <DraggableCourtPlayer
+player={player}
+color="purple"
+/>
+</DroppableCourtPlayer>
 
+  <button
+    onClick={() =>
+      removeCourtPlayer(
+        court.id,
+        player.id
+      )
+    }
+    className="text-red-600 font-bold"
+  >
+    ✕
+  </button>
 </div>
 
          ))}

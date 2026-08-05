@@ -38,43 +38,27 @@ function DraggablePlayer({ player }) {
     },
   });
 
-const style = {
-  transform: transform
-    ? `translate3d(
-        ${transform.x}px,
-        ${transform.y}px,
-        0
-      )`
-    : undefined,
+  const style = {
+    transform: transform
+      ? `translate3d(
+          ${transform.x}px,
+          ${transform.y}px,
+          0
+        )`
+      : undefined,
+  };
 
-  zIndex: transform ? 9999 : 1,
-  position: "relative",
-};
-
-return (
-  <div
-    ref={setNodeRef}
-    style={style}
-    {...listeners}
-    {...attributes}
-    className="
-      w-10
-      h-10
-      rounded-full
-      bg-blue-500
-      text-white
-      flex
-      items-center
-      justify-center
-      font-bold
-      cursor-grab
-      hover:scale-105
-      transition-all
-    "
-  >
-    {player.name.charAt(0).toUpperCase()}
-  </div>
-);
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...listeners}
+      {...attributes}
+      className="cursor-grab"
+    >
+      {player.name}
+    </div>
+  );
 }
 
 //Dropable court function
@@ -169,7 +153,6 @@ function DroppableCourtPlayer({
 
 function DraggableCourtPlayer({
   player,
-  color = "blue",
 }) {
   const {
     attributes,
@@ -194,62 +177,21 @@ function DraggableCourtPlayer({
       : undefined,
   };
 
-return (
-<div
-  ref={setNodeRef}
-  style={style}
-  {...listeners}
-  {...attributes}
-  className="
-    flex
-    flex-col
-    items-center
-    justify-center
-    text-center
-    cursor-grab
-    w-full
-    py-1
-  "
->
-  <div
-    className={`
-      w-7
-      h-7
-      rounded-full
-      flex
-      items-center
-      justify-center
-      text-white
-      text-xs
-      font-bold
-      ${
-        color === "purple"
-          ? "bg-purple-500"
-          : "bg-blue-500"
-      }
-    `}
-  >
-    {player.name.charAt(0).toUpperCase()}
-  </div>
-
-<div className="mt-1">
-  <span
-    className="
-    block
-    text-xs
-    font-semibold
-    text-center
-    capitalize
-    break-words
-  "
-    title={player.name}
-  >
-    {player.name}
-  </span>
-
-</div>
-  </div>
-);
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...listeners}
+      {...attributes}
+      className="
+  cursor-grab
+  p-2
+  rounded
+"
+    >
+      {player.name}
+    </div>
+  );
 }
 
 //app function
@@ -3018,119 +2960,52 @@ const renderPlayerRow = (
   index
 ) => (
   <div
-  key={player.id}
-  className="
-    bg-white
-    border
-    border-slate-200
-    rounded-xl
-    p-4
-    mb-3
-    shadow-sm
-    hover:shadow-md
-    transition-all
-    hover:-translate-y-1
-  "
->
+    key={player.id}
+    className="
+      flex
+      flex-col
+      md:flex-row
+      md:justify-between
+      md:items-center
+      border-b
+      py-2
+      gap-2
+    "
+  >
     <div>
-    <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
+        <span>
+          {index + 1}.
+        </span>
 
-  <DraggablePlayer
-    player={player}
-  />
+        <DraggablePlayer
+          player={player}
+        />
+      </div>
 
-  <div>
+      <div className="text-sm text-gray-500">
+        Games: {player.gamesPlayed} |
+        W: {player.wins || 0} |
+        L: {player.losses || 0}
+      </div>
 
-    <div className="font-semibold text-slate-800">
-      {player.name}
-    </div>
-
-    <div className="text-xs text-gray-500">
-      #{index + 1} in queue
-    </div>
-
-<div className="text-xs text-blue-500 mt-1">
-  ⏳ {getRelativeTime(player.waitingSince)}
+<div className="text-xs text-blue-500">
+  Consecutive:
+  {player.consecutiveGames || 0}
 </div>
 
-  </div>
-
-</div>
-
-      <div className="flex gap-2 mt-3 flex-wrap">
-
-  <span className="
-    bg-blue-50
-    text-blue-600
-    px-2 py-1
-    rounded-full
-    text-xs
-    font-semibold
-  ">
-    GP {player.gamesPlayed}
-  </span>
-
-  <span className="
-    bg-green-50
-    text-green-600
-    px-2 py-1
-    rounded-full
-    text-xs
-    font-semibold
-  ">
-    W {player.wins || 0}
-  </span>
-
-  <span className="
-    bg-red-50
-    text-red-600
-    px-2 py-1
-    rounded-full
-    text-xs
-    font-semibold
-  ">
-    L {player.losses || 0}
-  </span>
-
-</div>
-
-<div className="flex items-center gap-3 mt-2 text-xs">
-
-  <span className="text-orange-500">
-    🔥 {player.consecutiveGames || 0}
-  </span>
-
-  {player.lastResult === "win" && (
-    <span className="text-green-600">
-      ✅ Won
-    </span>
-  )}
-
-  {player.lastResult === "loss" && (
-    <span className="text-red-600">
-      ❌ Lost
-    </span>
-  )}
-
-  {!player.lastResult && (
-    <span className="text-gray-500">
-      🆕 New
-    </span>
-  )}
-
+ <div className="text-xs text-gray-500">
+  Last Result:
+  {" "}
+  {player.lastResult === "win"
+    ? "✅ Win"
+    : player.lastResult === "loss"
+    ? "❌ Loss"
+    : "🆕 New"}
 </div>
 
       {player.priority && (
-        <div
-  className="
-    flex
-    gap-2
-    mt-3
-    pt-3
-    border-t
-    border-slate-200
-  "
->
+        <div className="text-yellow-600 font-bold text-xs">
           ⭐ PRIORITY
         </div>
       )}
@@ -3155,19 +3030,7 @@ const renderPlayerRow = (
             [player.id]: e.target.value,
           }))
         }
-        className="
-w-full
-border
-border-slate-200
-rounded-lg
-px-3
-py-2
-text-sm
-bg-white
-focus:outline-none
-focus:ring-2
-focus:ring-blue-400
-"
+        className="border rounded px-2 py-1 text-sm"
       >
         <option value="">
           Select Court
@@ -3184,16 +3047,7 @@ focus:ring-blue-400
         ))}
       </select>
 
-      <div
-  className="
-    flex
-    gap-2
-    mt-3
-    pt-3
-    border-t
-    border-slate-100
-  "
->
+      <div className="flex gap-1">
 
         <button
           onClick={async () => {
@@ -3250,20 +3104,11 @@ focus:ring-blue-400
     });
 
   }}
- className={`
-w-9
-h-9
-rounded-lg
-flex
-items-center
-justify-center
-transition-all
-${
-  player.noPriority
-    ? "bg-orange-500 text-white"
-    : "bg-slate-100 hover:bg-slate-200"
-}
-`}
+  className={`px-2 py-1 rounded text-sm ${
+    player.noPriority
+      ? "bg-orange-500 text-white"
+      : "bg-gray-200"
+  }`}
 >
   🚫
 </button>
@@ -3289,17 +3134,7 @@ ${
               courtId
             );
           }}
-          className="
-w-9
-h-9
-rounded-lg
-flex
-items-center
-justify-center
-bg-green-500
-text-white
-hover:bg-green-600
-"
+          className="bg-green-500 text-white px-2 py-1 rounded text-sm"
         >
           ➕
         </button>
@@ -3310,17 +3145,7 @@ hover:bg-green-600
               player.id
             )
           }
-          className="
-w-9
-h-9
-rounded-lg
-flex
-items-center
-justify-center
-bg-red-500
-text-white
-hover:bg-red-600
-"
+          className="bg-red-500 text-white px-2 py-1 rounded text-sm"
         >
           ✕
         </button>
@@ -3330,54 +3155,21 @@ hover:bg-red-600
   </div>
 );
 
-const actionButton = `
-h-11
-px-4
-rounded-lg
-font-medium
-text-white
-transition-all
-shadow-sm
-hover:shadow-md
-hover:-translate-y-0.5
-`;
-
   return (
     
 
+    
+
     /* ===== APP CONTAINER START ===== */
-    <div
-  className="
-    min-h-screen
-    bg-gradient-to-br
-    from-slate-100
-    via-blue-50
-    to-purple-50
-    p-3
-    md:p-6
-  "
->
+    <div className="min-h-screen bg-slate-100 p-3 md:p-6">
 
      {/* ===== PAGE CONTAINER START ===== */}
       <div className="max-w-7xl mx-auto w-full">
 
         {/* ===== HEADER START ===== */}
-
-      <div className="
-  bg-gradient-to-r
-  from-blue-600
-  to-indigo-600
-  text-white
-  rounded-2xl
-  p-6
-  mb-6
-  shadow-lg
-">
-  <h1 className="text-4xl font-bold">
-    🏓 PickleStack
-  </h1>
-</div>
-
+        <h1 className="text-3xl md:text-5xl font-bold text-center mb-8">
+          🏓 PickleStack
+        </h1>
         <div className="text-center mb-6">
   <div className="text-lg font-semibold text-blue-600">
     🏷️ Session {sessionId}
@@ -3394,27 +3186,11 @@ hover:-translate-y-0.5
     onClick={() =>
       setActiveTab("dashboard")
     }
-   className={`
-h-11
-rounded-lg
-font-medium
-transition-all
-shadow-sm
-hover:shadow-md
-${
-  activeTab === "dashboard"
-    ? `
-      bg-blue-600
-      text-white
-    `
-    : `
-      bg-white
-      border
-      border-slate-200
-      hover:bg-slate-50
-    `
-}
-`}
+    className={`px-4 py-2 rounded ${
+      activeTab === "dashboard"
+        ? "bg-blue-600 text-white"
+        : "bg-white"
+    }`}
   >
     🏠 Dashboard
   </button>
@@ -3424,27 +3200,11 @@ ${
     onClick={() =>
       setActiveTab("standings")
     }
-    className={`
-h-11
-rounded-lg
-font-medium
-transition-all
-shadow-sm
-hover:shadow-md
-${
-  activeTab === "standings"
-    ? `
-      bg-blue-600
-      text-white
-    `
-    : `
-      bg-white
-      border
-      border-slate-200
-      hover:bg-slate-50
-    `
-}
-`}
+    className={`px-4 py-2 rounded ${
+      activeTab === "standings"
+        ? "bg-blue-600 text-white"
+        : "bg-white"
+    }`}
   >
     🏆 Standings
   </button>
@@ -3454,27 +3214,11 @@ ${
   onClick={() =>
     setActiveTab("attendance")
   }
- className={`
-h-11
-rounded-lg
-font-medium
-transition-all
-shadow-sm
-hover:shadow-md
-${
-  activeTab === "attendance"
-    ? `
-      bg-blue-600
-      text-white
-    `
-    : `
-      bg-white
-      border
-      border-slate-200
-      hover:bg-slate-50
-    `
-}
-`}
+  className={`px-4 py-2 rounded ${
+    activeTab === "attendance"
+      ? "bg-blue-600 text-white"
+      : "bg-white"
+  }`}
 >
   👥 Attendance
 </button>
@@ -3485,27 +3229,11 @@ ${
     onClick={() =>
       setActiveTab("history")
     }
-   className={`
-h-11
-rounded-lg
-font-medium
-transition-all
-shadow-sm
-hover:shadow-md
-${
-  activeTab === "history"
-    ? `
-      bg-blue-600
-      text-white
-    `
-    : `
-      bg-white
-      border
-      border-slate-200
-      hover:bg-slate-50
-    `
-}
-`}
+    className={`px-4 py-2 rounded ${
+      activeTab === "history"
+        ? "bg-blue-600 text-white"
+        : "bg-white"
+    }`}
   >
     📜Match History
   </button>
@@ -3514,31 +3242,8 @@ ${
 
         {activeTab === "dashboard" && (
           
-<div className="
-  bg-white
-  rounded-2xl
-  shadow-md
-  border
-  border-slate-200
-  p-4
-  mb-6
-">
-
-  <h2 className="
-    text-lg
-    font-bold
-    text-slate-700
-    mb-3
-  ">
-    🎮 Session Controls
-  </h2>
-
-  <div className="
-    grid
-    grid-cols-2
-    md:grid-cols-4
-    gap-2
-  ">
+          <div className="bg-white rounded-xl shadow p-4 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
 
          
 <div className="relative flex-1">
@@ -3603,19 +3308,7 @@ ${
   }
 }}
 
-    className="
-w-full
-h-11
-px-4
-rounded-lg
-border
-border-slate-200
-bg-white
-shadow-sm
-focus:outline-none
-focus:ring-2
-focus:ring-blue-400
-"
+    className="border rounded p-2 w-full"
   />
 
   {matchingPlayers.length > 0 &&
@@ -3705,20 +3398,16 @@ focus:ring-blue-400
             
 
             <button
-  onClick={addPlayer}
-  className={`${actionButton}
-    bg-green-500
-    hover:bg-green-600`}
->
+              onClick={addPlayer}
+              className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded"
+            >
               Add Player
             </button>
 
             
             <button
   onClick={startNextGame}
-  className={`${actionButton}
-  bg-blue-500
-  hover:bg-blue-600`}
+  className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
 >
   Start Game
 </button>
@@ -3726,18 +3415,14 @@ focus:ring-blue-400
 
             <button
               onClick={addCourt}
-              className={`${actionButton}
-  bg-purple-500
-  hover:bg-purple-600`}
+              className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded"
             >
               + Court
             </button>
 
             <button
               onClick={removeCourt}
-              className={`${actionButton}
-  bg-red-500
-  hover:bg-red-600`}
+              className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded"
             >
               - Court
             </button>
@@ -3745,27 +3430,21 @@ focus:ring-blue-400
 
 <button
   onClick={startNewSession}
-  className={`${actionButton}
-  bg-indigo-600
-  hover:bg-indigo-700`}
+  className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded"
 >
   ➡️ New Session
 </button>
 
 <button
   onClick={resetSession}
-  className={`${actionButton}
-  bg-amber-500
-  hover:bg-amber-600`}
+  className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded"
 >
   🔄 Restart Current Session
 </button>
 
 <button
   onClick={factoryReset}
- className={`${actionButton}
-  bg-slate-700
-  hover:bg-slate-800`}
+  className="bg-red-700 hover:bg-red-800 text-white px-4 py-2 rounded"
 >
   ☢️ Factory Reset
 </button>
@@ -3779,59 +3458,29 @@ focus:ring-blue-400
           )}
 
         <div className="mt-4 space-y-1 text-sm md:text-base">
-  <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-6">
+  <p>
+    <strong>Courts:</strong> {courts.length}
+  </p>
 
-  <div className="bg-blue-50 p-4 rounded-xl">
-    <div className="text-sm text-gray-500">
-      Waiting
-    </div>
+  <p>
+    <strong>Players Waiting:</strong>{" "}
+    {players.length}
+  </p>
 
-    <div className="text-3xl font-bold text-blue-600">
-      {players.length}
-    </div>
-  </div>
+  <p>
+    <strong>Players Playing:</strong>{" "}
+    {activePlayers}
+  </p>
 
-  <div className="bg-green-50 p-4 rounded-xl">
-    <div className="text-sm text-gray-500">
-      Playing
-    </div>
+  <p>
+    <strong>Total Players:</strong>{" "}
+    {totalPlayers}
+  </p>
 
-    <div className="text-3xl font-bold text-green-600">
-      {activePlayers}
-    </div>
-  </div>
-
-  <div className="bg-purple-50 p-4 rounded-xl">
-    <div className="text-sm text-gray-500">
-      Courts
-    </div>
-
-    <div className="text-3xl font-bold text-purple-600">
-      {courts.length}
-    </div>
-  </div>
-
-  <div className="bg-orange-50 p-4 rounded-xl">
-    <div className="text-sm text-gray-500">
-      Total Players
-    </div>
-
-    <div className="text-3xl font-bold text-orange-600">
-      {totalPlayers}
-    </div>
-  </div>
-
-  <div className="bg-red-50 p-4 rounded-xl">
-    <div className="text-sm text-gray-500">
-      Matches
-    </div>
-
-    <div className="text-3xl font-bold text-red-600">
-      {totalGamesPlayed}
-    </div>
-  </div>
-
-</div>
+  <p>
+    <strong>Total Games Recorded:</strong>{" "}
+    {totalGamesPlayed}
+  </p>
 </div>
         </div>
         )}
@@ -4803,25 +4452,22 @@ return (
   onDragEnd={handleDragEnd}
 >
 
-<div className="grid lg:grid-cols-12 gap-6">
-  
-  <div className="lg:col-span-4">
+<div className="grid md:grid-cols-3 gap-6">
   <DroppableQueue>
           <div className="bg-white rounded-xl shadow p-4">
-
-            <h2 className="text-2xl font-bold mb-1">
-  Waiting Queue
-</h2>
-
-<p className="text-sm text-gray-500 mb-4">
-  {waitingPlayers.length} players waiting
-</p>
+            <h2 className="text-2xl font-bold mb-4">
+              Waiting Queue
+            </h2>
 
             {sortedPlayers.length === 0 ? (
               <p>No players waiting</p>
             ) : (
+         <div className="mb-4">
+  <h3 className="font-bold text-blue-600 mb-2">
+    ⏳ WAITING PLAYERS
+    ({waitingPlayers.length})
+  </h3>
 
-<div className="space-y-3">
   {waitingPlayers.map(
     (player, index) =>
       renderPlayerRow(
@@ -4830,13 +4476,11 @@ return (
       )
   )}
 </div>
-
             )}
           </div>
 </DroppableQueue>
-</div>
-          <div className="lg:col-span-8">
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+          <div className="md:col-span-2">
+            <div className="grid md:grid-cols-2 gap-4">
               
               {courts.map((court) => (
 
@@ -4845,265 +4489,106 @@ return (
   courtId={court.id}
 >
 
- <div
- className="
- bg-white
- rounded-2xl
- shadow-lg
- p-5
- border
- border-slate-200
- hover:shadow-xl
- transition-all
- hover:-translate-y-1
- "
->
-<div className="
-flex
-justify-between
-items-start
-mb-3
-pb-3
-border-b
-border-blue-100
-">
-
- <div>
-
-  <h2 className="text-2xl font-bold text-blue-700">
-    🏓 Court #{court.id}
-  </h2>
-
-  {court.players.length === 4 && (
-    <span
-      className="
-        inline-block
-        mt-1
-        bg-green-100
-        text-green-700
-        px-2
-        py-1
-        rounded-full
-        text-xs
-        font-semibold
-      "
-    >
-      🟢 Active Match
-    </span>
-  )}
-
-</div>
-
-  <span
-    className="
-      bg-blue-500
-      text-white
-      px-3
-      py-1
-      rounded-full
-      text-sm
-      font-semibold
-    "
+  <div
+    className="bg-white rounded-xl shadow p-5"
   >
-    {court.players.length}/4
-  </span>
-
-</div>
+<h2 className="text-2xl font-bold mb-4 text-blue-600">
+  🏓 Court #{court.id}
+</h2>
 
                 {court.startedAt && (
- <div
-  className={`
-
-    mb-3
-
-    font-bold
-
-    text-lg
-
-    ${
+  <div
+    className={`mb-3 font-semibold ${
       getCourtMinutes(court.startedAt) >= 20
-        ? "text-red-600 animate-pulse"
+        ? "text-red-600"
         : getCourtMinutes(court.startedAt) >= 15
         ? "text-yellow-600"
         : "text-green-600"
-    }
-  `}
->
-  ⏱ {getCourtDuration(court.startedAt)}
-</div>
+    }`}
+  >
+    ⏱ {getCourtDuration(court.startedAt)}
+  </div>
 )}    
 
                   {court.players.length === 0 ? (
-                   <div className="
-text-center
-py-8
-border-2
-border-dashed
-border-gray-300
-rounded-xl
-text-gray-400
-">
-  Drag players here
-</div>
+                    <p className="text-gray-400">
+                      Empty Court
+                    </p>
                   ) : (
-                
-                    <div className="space-y-4">
-
-  <div className="text-center mb-2">
-
-    <span className="font-bold text-blue-600">
-      🔵 Team A
-    </span>
-
-    <span className="mx-3 text-gray-400">
-      VS
-    </span>
-
-    <span className="font-bold text-purple-600">
-      🟣 Team B
-    </span>
-  </div>
-<div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-  
+                <div className="space-y-4">
   <div>
- <span
- className="
- inline-block
- bg-blue-500
- text-white
- px-3
- py-1
- rounded-full
- text-sm
- font-bold
- "
->
- Team A
-</span>
+    <h3 className="font-bold text-blue-600">
+      Team A
+    </h3>
 
     {court.players
   .filter(Boolean)
   .slice(0, 2)
   .map((player) => (
-  <div
+       <div
   key={player.id}
-  className="
-bg-white
-border-l-4
-border-blue-500
-p-3
-rounded-lg
-mb-2
-flex
-items-center
-shadow-sm
-min-h-[72px]
-"
->  
-<div className="flex-1 min-w-0">
-  <DroppableCourtPlayer
-    player={player}
-  >
-    <DraggableCourtPlayer
-      player={player}
-    />
-  </DroppableCourtPlayer>
-</div>
-
-<button
-  onClick={() =>
-    removeCourtPlayer(
-      court.id,
-      player.id
-    )
-  }
-  className="
-    ml-2
-    flex-shrink-0
-    text-red-600
-    font-bold
-  "
+  className="bg-blue-100 p-2 rounded mb-1 flex justify-between items-center"
 >
-  ✕
-</button>
-
+<DroppableCourtPlayer
+  player={player}
+>
+  <DraggableCourtPlayer
+    player={player}
+  />
+</DroppableCourtPlayer>
+  <button
+    onClick={() =>
+      removeCourtPlayer(
+        court.id,
+        player.id
+      )
+    }
+    className="text-red-600 font-bold"
+  >
+    ✕
+  </button>
 </div>
 
       ))}
   </div>
 
   <div>
-    <span
- className="
- inline-block
- bg-purple-500
- text-white
- px-3
- py-1
- rounded-full
- text-sm
- font-bold
- "
->
- Team B
-</span>
+    <h3 className="font-bold text-purple-600">
+      Team B
+    </h3>
 
     {court.players
   .filter(Boolean)
   .slice(2, 4)
   .map((player) => (
 
-<div
+     <div
   key={player.id}
-  className="
-bg-white
-border-l-4
-border-purple-500
-p-3
-rounded-lg
-mb-2
-flex
-items-center
-shadow-sm
-min-h-[72px]
-"
+  className="bg-purple-100 p-2 rounded mb-1 flex justify-between items-center"
 >
-  
-<div className="flex-1 min-w-0">
   <DroppableCourtPlayer
-    player={player}
-  >
-    <DraggableCourtPlayer
-      player={player}
-      color="purple"
-    />
-  </DroppableCourtPlayer>
-</div>
-
-<button
-  onClick={() =>
-    removeCourtPlayer(
-      court.id,
-      player.id
-    )
-  }
-  className="
-    ml-2
-    flex-shrink-0
-    text-red-600
-    font-bold
-  "
+  player={player}
 >
-  ✕
-</button>
+  <DraggableCourtPlayer
+    player={player}
+  />
+</DroppableCourtPlayer>
 
+  <button
+    onClick={() =>
+      removeCourtPlayer(
+        court.id,
+        player.id
+      )
+    }
+    className="text-red-600 font-bold"
+  >
+    ✕
+  </button>
 </div>
 
-         ))}
-    </div>
-
+      ))}
   </div>
-
 </div>
                   )}
 
@@ -5115,18 +4600,7 @@ min-h-[72px]
     disabled={
   court.players.length !== 4
 }
-    className="
-bg-gradient-to-r
-from-blue-500
-to-blue-700
-text-white
-font-semibold
-py-2
-rounded-xl
-shadow-sm
-hover:shadow-md
-disabled:bg-gray-400
-"
+    className="bg-blue-500 hover:bg-blue-600 text-white py-2 rounded disabled:bg-gray-400"
   >
     Team A Wins
   </button>
@@ -5138,18 +4612,7 @@ disabled:bg-gray-400
     disabled={
   court.players.length !== 4
 }
-    className="
-bg-gradient-to-r
-from-purple-500
-to-purple-700
-text-white
-font-semibold
-py-2
-rounded-xl
-shadow-sm
-hover:shadow-md
-disabled:bg-gray-400
-"
+    className="bg-purple-500 hover:bg-purple-600 text-white py-2 rounded disabled:bg-gray-400"
   >
     Team B Wins
   </button>

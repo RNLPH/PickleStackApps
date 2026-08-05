@@ -195,59 +195,53 @@ function DraggableCourtPlayer({
   };
 
 return (
-<div
-  ref={setNodeRef}
-  style={style}
-  {...listeners}
-  {...attributes}
-  className="
-    flex
-    flex-col
-    items-center
-    justify-center
-    text-center
-    cursor-grab
-    w-full
-    py-1
-  "
->
   <div
-    className={`
-      w-7
-      h-7
-      rounded-full
+    ref={setNodeRef}
+    style={style}
+    {...listeners}
+    {...attributes}
+    className="
       flex
       items-center
-      justify-center
-      text-white
-      text-xs
-      font-bold
-      ${
-        color === "purple"
-          ? "bg-purple-500"
-          : "bg-blue-500"
-      }
-    `}
+      gap-3
+      cursor-grab
+      w-full
+    "
   >
-    {player.name.charAt(0).toUpperCase()}
-  </div>
 
-<div className="mt-1">
+    <div
+      className={`
+        w-8
+        h-8
+        rounded-full
+        flex
+        items-center
+        justify-center
+        text-white
+        text-xs
+        font-bold
+        ${
+          color === "purple"
+            ? "bg-purple-500"
+            : "bg-blue-500"
+        }
+      `}
+    >
+      {player.name.charAt(0).toUpperCase()}
+    </div>
+
   <span
-    className="
-    block
-    text-xs
-    font-semibold
-    text-center
+  className="
+    font-medium
     capitalize
-    break-words
+    truncate
+    block
+    w-full
   "
-    title={player.name}
-  >
-    {player.name}
-  </span>
+>
+  {player.name}
+</span>
 
-</div>
   </div>
 );
 }
@@ -3345,6 +3339,8 @@ hover:-translate-y-0.5
   return (
     
 
+    
+
     /* ===== APP CONTAINER START ===== */
     <div
   className="
@@ -4803,9 +4799,7 @@ return (
   onDragEnd={handleDragEnd}
 >
 
-<div className="grid lg:grid-cols-12 gap-6">
-  
-  <div className="lg:col-span-4">
+<div className="grid md:grid-cols-3 gap-6">
   <DroppableQueue>
           <div className="bg-white rounded-xl shadow p-4">
 
@@ -4834,9 +4828,8 @@ return (
             )}
           </div>
 </DroppableQueue>
-</div>
-          <div className="lg:col-span-8">
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+          <div className="md:col-span-2">
+            <div className="grid md:grid-cols-2 gap-4">
               
               {courts.map((court) => (
 
@@ -4963,7 +4956,8 @@ text-gray-400
       🟣 Team B
     </span>
   </div>
-<div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+<div className="grid grid-cols-2 gap-3">
+  
   
   <div>
  <span
@@ -4997,7 +4991,6 @@ mb-2
 flex
 items-center
 shadow-sm
-min-h-[72px]
 "
 >  
 <div className="flex-1 min-w-0">
@@ -5065,7 +5058,6 @@ mb-2
 flex
 items-center
 shadow-sm
-min-h-[72px]
 "
 >
   
