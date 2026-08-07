@@ -275,6 +275,10 @@ export default function App() {
   const [expandedMatchSession,
   setExpandedMatchSession] =
   useState(null);
+  const [showTierModal, setShowTierModal] =
+  useState(false);
+const [pendingPlayerName, setPendingPlayerName] =
+  useState("");
  
 
 const [sessionId, setSessionId] = useState(() => {
@@ -1231,8 +1235,23 @@ const recordOpponents = (
 //END OF HELPER
 
 // ===== PLAYER ACTIONS =====
- const addPlayer = async () => {
-    const trimmedName = name.trim();
+
+//Choices modal
+const openTierSelection = () => {
+  const trimmedName = name.trim();
+
+  if (!trimmedName) {
+    setError("Please enter a player name.");
+    return;
+  }
+
+  setPendingPlayerName(trimmedName);
+  setShowTierModal(true);
+};
+
+const addPlayer = async (tier) => {
+    const trimmedName =
+  pendingPlayerName.trim();
 
     if (!trimmedName) {
       setError("Please enter a player name.");
@@ -1284,6 +1303,10 @@ if (existingDirectoryPlayer) {
 
   newPlayer = {
     ...existingDirectoryPlayer,
+
+   tier:
+  existingDirectoryPlayer.tier ||
+  tier,
     
     consecutiveGames:
   existingDirectoryPlayer.consecutiveGames ?? 0,
@@ -1321,6 +1344,7 @@ else {
   id: crypto.randomUUID(),
   name: trimmedName,
   consecutiveGames: 0,
+  tier: tier,
   restedOnce: false,
   lastPartnerId: null,
   lastOpponents: [],
@@ -1376,10 +1400,15 @@ setPlayers((prev) => [
   newPlayer,
 ]);
 
-    setName("");
-    setError("");
+   
+   setName("");
+setError("");
 
-    inputRef.current?.focus();
+setPendingPlayerName("");
+setShowTierModal(false);
+
+inputRef.current?.focus();
+
   };
 
 const removePlayer = (id) => {
@@ -3042,8 +3071,19 @@ const renderPlayerRow = (
   <div>
 
     <div className="font-semibold text-slate-800">
-      {player.name}
-    </div>
+  {player.name}
+</div>
+
+<div className="text-xs">
+  {player.tier === "king" &&
+    "👑 King"}
+
+  {player.tier === "knight" &&
+    "⚔️ Knight"}
+
+  {player.tier === "squire" &&
+    "🛡️ Squire"}
+</div>
 
     <div className="text-xs text-gray-500">
       #{index + 1} in queue
@@ -3595,8 +3635,8 @@ ${
   }
 
   else if (e.key === "Enter") {
-    addPlayer();
-  }
+  openTierSelection();
+}
 
   else if (e.key === "Escape") {
     setHighlightedIndex(-1);
@@ -3617,6 +3657,7 @@ focus:ring-2
 focus:ring-blue-400
 "
   />
+
 
   {matchingPlayers.length > 0 &&
     name.trim() !== "" && (
@@ -3704,8 +3745,8 @@ focus:ring-blue-400
 </div>
             
 
-            <button
-  onClick={addPlayer}
+       <button
+  onClick={openTierSelection}
   className={`${actionButton}
     bg-green-500
     hover:bg-green-600`}
@@ -5166,6 +5207,106 @@ disabled:bg-gray-400
         </div>
         </DndContext>
         )}
+        {showTierModal && (
+  <div
+    className="
+      fixed
+      inset-0
+      bg-black/50
+      flex
+      items-center
+      justify-center
+      z-50
+    "
+  >
+    <div
+      className="
+        bg-white
+        rounded-2xl
+        p-6
+        shadow-xl
+        w-80
+      "
+    >
+      <h2 className="text-xl font-bold mb-4">
+        Select Tier
+      </h2>
+
+      <div className="mb-4">
+        Player:
+        <span className="font-bold ml-2">
+          {pendingPlayerName}
+        </span>
+      </div>
+
+      <div className="space-y-2">
+
+        <button
+          onClick={() =>
+            addPlayer("king")
+          }
+          className="
+            w-full
+            bg-yellow-500
+            hover:bg-yellow-600
+            text-white
+            py-3
+            rounded-xl
+          "
+        >
+          👑 King
+        </button>
+
+        <button
+          onClick={() =>
+            addPlayer("knight")
+          }
+          className="
+            w-full
+            bg-indigo-500
+            hover:bg-indigo-600
+            text-white
+            py-3
+            rounded-xl
+          "
+        >
+          ⚔️ Knight
+        </button>
+
+        <button
+          onClick={() =>
+            addPlayer("squire")
+          }
+          className="
+            w-full
+            bg-green-500
+            hover:bg-green-600
+            text-white
+            py-3
+            rounded-xl
+          "
+        >
+          🛡️ Squire
+        </button>
+
+        <button
+          onClick={() =>
+            setShowTierModal(false)
+          }
+          className="
+            w-full
+            bg-gray-200
+            py-2
+            rounded-xl
+          "
+        >
+          Cancel
+        </button>
+
+      </div>
+    </div>
+  </div>
+)}
 
       </div> 
     </div>
