@@ -283,6 +283,10 @@ const [
   selectedCourtForEdit,
   setSelectedCourtForEdit
 ] = useState(null);
+const [
+  selectedPlayerForEdit,
+  setSelectedPlayerForEdit
+] = useState(null);
 
 
 
@@ -1172,10 +1176,16 @@ const getQueueScore = (
       ) / 60000
     );
 
+    const noPriorityPenalty =
+  player.noPriority
+    ? -10000
+    : 0;
+
   return (
     player.gamesPlayed * -100 +
     winnerBonus +
-    waitBonus
+    waitBonus +
+    noPriorityPenalty
   );
 };
 
@@ -1540,6 +1550,41 @@ const updateCourtType = (
   );
 
   setSelectedCourtForEdit(null);
+};
+
+const updatePlayerTier = async (
+  playerId,
+  newTier
+) => {
+
+  //updatePlayerTier
+  const updatedPlayers =
+    players.map((player) =>
+      player.id === playerId
+        ? {
+            ...player,
+            tier: newTier,
+          }
+        : player
+    );
+
+  setPlayers(updatedPlayers);
+
+  const targetPlayer =
+    updatedPlayers.find(
+      (player) =>
+        player.id === playerId
+    );
+
+  if (targetPlayer) {
+    await saveDirectoryPlayer(
+      targetPlayer
+    );
+  }
+
+  setSelectedPlayerForEdit(
+    null
+  );
 };
 
 //remove court player
@@ -3681,6 +3726,27 @@ ${
 </button>
 
 
+<button
+  onClick={() =>
+    setSelectedPlayerForEdit(
+      player.id
+    )
+  }
+  className="
+    w-9
+    h-9
+    rounded-lg
+    flex
+    items-center
+    justify-center
+    bg-yellow-500
+    text-white
+    hover:bg-yellow-600
+  "
+  title="Change Tier"
+>
+  🔄
+</button>
 
         <button
           onClick={() => {
@@ -6141,6 +6207,114 @@ disabled:bg-gray-400
 
     </div>
   </div>
+)}
+
+{selectedPlayerForEdit && (
+
+  <div
+    className="
+      fixed
+      inset-0
+      bg-black/50
+      flex
+      items-center
+      justify-center
+      z-50
+    "
+  >
+
+    <div
+      className="
+        bg-white
+        rounded-2xl
+        p-6
+        shadow-xl
+        w-80
+      "
+    >
+
+      <h2 className="text-xl font-bold mb-4">
+        Change Player Tier
+      </h2>
+
+      <div className="space-y-2">
+
+        <button
+          onClick={() =>
+            updatePlayerTier(
+              selectedPlayerForEdit,
+              "king"
+            )
+          }
+          className="
+            w-full
+            bg-yellow-500
+            text-white
+            py-3
+            rounded-xl
+          "
+        >
+          👑 King
+        </button>
+
+        <button
+          onClick={() =>
+            updatePlayerTier(
+              selectedPlayerForEdit,
+              "knight"
+            )
+          }
+          className="
+            w-full
+            bg-indigo-500
+            text-white
+            py-3
+            rounded-xl
+          "
+        >
+          ⚔️ Knight
+        </button>
+
+        <button
+          onClick={() =>
+            updatePlayerTier(
+              selectedPlayerForEdit,
+              "squire"
+            )
+          }
+          className="
+            w-full
+            bg-green-500
+            text-white
+            py-3
+            rounded-xl
+          "
+        >
+          🛡️ Squire
+        </button>
+
+        <button
+          onClick={() =>
+            setSelectedPlayerForEdit(
+              null
+            )
+          }
+          className="
+            w-full
+            bg-gray-200
+            py-2
+            rounded-xl
+          "
+        >
+          Cancel
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
 )}
       </div> 
     </div>
