@@ -4314,8 +4314,34 @@ focus:ring-blue-400
           {rank === 2 && "🥈 "}
           {rank === 3 && "🥉 "}
           #{rank} {player.name}
-
         </strong>
+
+        <div className="text-xs mt-1">
+
+  <span
+    className={`
+      font-semibold
+      ${
+        player.tier === "king"
+          ? "text-yellow-600"
+          : player.tier === "knight"
+          ? "text-indigo-600"
+          : "text-green-600"
+      }
+    `}
+  >
+    {player.tier === "king" &&
+      "👑 King's Court"}
+
+    {player.tier === "knight" &&
+      "⚔️ Knight Court"}
+
+    {player.tier === "squire" &&
+      "🛡️ Squire Court"}
+  </span>
+
+</div>
+
       </div>
 
       <div className="text-sm text-right">
@@ -4351,6 +4377,13 @@ focus:ring-blue-400
   {" "}
   {getAttendanceCount(player.id)}
 </div>
+
+<div className="text-xs text-yellow-600 font-semibold">
+  👑 King Entries:
+  {" "}
+  {player.kingCourtEntries || 0}
+</div>
+
   {(player.currentStreak || 0) > 0 && (
   <div className="text-xs text-orange-500 font-semibold">
     🔥 Streak: {player.currentStreak}
