@@ -1552,38 +1552,10 @@ const updateCourtType = (
   setSelectedCourtForEdit(null);
 };
 
-
-
 const updatePlayerTier = async (
   playerId,
   newTier
 ) => {
-
-  const tierCounts =
-  getTierCounts();
-
-const currentPlayer =
-  players.find(
-    (player) =>
-      player.id === playerId
-  );
-
-if (!currentPlayer) return;
-
-if (
-  currentPlayer.tier !== newTier &&
-  tierCounts[newTier] >=
-    TIER_LIMITS[newTier]
-) {
-
-  alert(
-    `${newTier.toUpperCase()} queue is already full (${TIER_LIMITS[newTier]}/${TIER_LIMITS[newTier]}).`
-  );
-
-  return;
-}
-
-
 
   //updatePlayerTier
   const updatedPlayers =
@@ -1614,7 +1586,6 @@ if (
     null
   );
 };
-
 
 //remove court player
 const removeCourtPlayer = (courtId, playerId) => {
@@ -1883,23 +1854,6 @@ const addPlayerToCourt = (
   );
 
   if (!court) return;
-
-  if (
-  court.type &&
-  player.tier !== court.type
-) {
-
-  alert(
-    `${player.name} belongs to the ${
-      player.tier.toUpperCase()
-    } queue and cannot be assigned to a ${
-      court.type.toUpperCase()
-    } court.`
-  );
-
-  return;
-}
-
 
  if (court.players.length >= 4) {
   alert("Court is already full.");
