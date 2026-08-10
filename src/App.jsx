@@ -11,10 +11,6 @@ const DEFAULT_COURTS = [
     id: 1,
     players: [],
   },
-  {
-    id: 2,
-    players: [],
-  },
 ];
 
 
@@ -279,7 +275,19 @@ export default function App() {
   useState(false);
 const [pendingPlayerName, setPendingPlayerName] =
   useState("");
- 
+ const [
+  showCourtTypeModal,
+  setShowCourtTypeModal
+] = useState(false);
+const [
+  selectedCourtForEdit,
+  setSelectedCourtForEdit
+] = useState(null);
+
+
+
+
+
 
 const [sessionId, setSessionId] = useState(() => {
   return Number(
@@ -390,6 +398,9 @@ useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.COURTS);
     return saved ? JSON.parse(saved) : DEFAULT_COURTS;
   });
+
+  const [courtPreviews, setCourtPreviews] =
+  useState({});
 
 // ===== SAVE PLAYERS =====
 useEffect(() => {
@@ -1231,6 +1242,35 @@ const recordOpponents = (
 };
 
 
+//generatePreviewForCourt
+const generatePreviewForCourt = (
+  court
+) => {
+
+  const courtQueue =
+    getQueueByCourtType(
+      court.type
+    );
+
+  const selectedPlayers =
+    buildRotationGroup(
+      eligiblePlayers(
+        courtQueue
+      )
+    );
+
+  if (
+    selectedPlayers.length < 4
+  ) {
+    return [];
+  }
+
+  return createBalancedTeams(
+    selectedPlayers
+  );
+};
+
+
 
 //END OF HELPER
 
@@ -1335,6 +1375,9 @@ lastOpponents:
     bestStreak:
       existingDirectoryPlayer.bestStreak ?? 0,
 
+    kingCourtEntries:
+  existingDirectoryPlayer.kingCourtEntries ?? 0,
+
     waitingSince: Date.now(),
   };
 }
@@ -1355,6 +1398,7 @@ else {
   losses: 0,
   currentStreak: 0,
   bestStreak: 0,
+  kingCourtEntries: 0,
   partnerHistory: {},
   queueGroup: "unmatched",
   waitingSince: Date.now(),
@@ -1432,7 +1476,9 @@ const removePlayer = (id) => {
 };
 
 // ===== COURT ACTIONS =====
-const addCourt = () => {
+
+//Add court
+const addCourt = (courtType) => {
 
   setCourts((prev) => {
 
@@ -1444,19 +1490,40 @@ const addCourt = () => {
         0
       ) + 1;
 
-    return [
-      ...prev,
-      {
-        id: nextId,
-        players: [],
-      },
-    ];
+  return [
+  ...prev,
+  {
+    id: nextId,
+    type: courtType,
+    players: [],
+  },
+];
 
   });
-
-
+    setShowCourtTypeModal(false);
 };
 
+//update court type
+const updateCourtType = (
+  courtId,
+  courtType
+) => {
+
+  setCourts((prev) =>
+    prev.map((court) =>
+      court.id === courtId
+        ? {
+            ...court,
+            type: courtType,
+          }
+        : court
+    )
+  );
+
+  setSelectedCourtForEdit(null);
+};
+
+//remove court player
 const removeCourtPlayer = (courtId, playerId) => {
   const court = courts.find(
     (c) => c.id === courtId
@@ -1874,6 +1941,104 @@ return {
     setCourts((prev) => prev.slice(0, -1));
   };
 
+
+//delete specific court
+const deleteSpecificCourt = (
+  courtId
+) => {
+
+  const targetCourt =
+    courts.find(
+      (court) =>
+        court.id === courtId
+    );
+
+  if (!targetCourt) return;
+const confirmed =
+  window.confirm(
+    `Delete ${
+      targetCourt.type
+        ? targetCourt.type.toUpperCase()
+        : "COURT"
+    } #${targetCourt.id}?`
+  );
+
+if (!confirmed) {
+  return;
+}
+if (courts.length <= 1) {
+
+  alert(
+    "At least one court must remain."
+  );
+
+  return;
+}
+  if (
+    targetCourt.players.length > 0
+  ) {
+
+    const confirmed =
+      window.confirm(
+        "Delete this court and return all players to the queue?"
+      );
+
+    if (!confirmed) return;
+
+    setPlayers((prev) =>
+      sortPlayers([
+        ...prev,
+        ...targetCourt.players.map(
+          (player) => ({
+            ...player,
+            waitingSince:
+              Date.now(),
+          })
+        ),
+      ])
+    );
+  }
+
+  setCourts((prev) =>
+    prev.filter(
+      (court) =>
+        court.id !== courtId
+    )
+  );
+
+  setSelectedCourtForEdit(
+    null
+  );
+};
+
+const getNextTier = (
+  courtType,
+  won
+) => {
+
+  if (courtType === "king") {
+
+    return won
+      ? "king"
+      : "knight";
+  }
+
+  if (courtType === "knight") {
+
+    return won
+      ? "king"
+      : "squire";
+  }
+
+  if (courtType === "squire") {
+
+    return won
+      ? "knight"
+      : "squire";
+  }
+
+  return "squire";
+};
   // ===== MATCH ACTIONS =====
 
 
@@ -2009,12 +2174,17 @@ const assignPlayersToAllCourts = () => {
         return court;
       }
 
-      const selectedPlayers =
-        buildRotationGroup(
-          eligiblePlayers(
-            availablePlayers
-          )
-        );
+     const courtQueue =
+  getQueueByCourtType(
+    court.type
+  );
+
+const selectedPlayers =
+  buildRotationGroup(
+    eligiblePlayers(
+      courtQueue
+    )
+  );
 
       if (
         selectedPlayers.length < 4
@@ -2043,14 +2213,6 @@ const assignPlayersToAllCourts = () => {
           player => player.id
         );
 
-      availablePlayers =
-        availablePlayers.filter(
-          player =>
-            !selectedIds.includes(
-              player.id
-            )
-        );
-
       return {
         ...court,
         players: teams,
@@ -2073,7 +2235,12 @@ const assignPlayersToAllCourts = () => {
 
 setPlayers(
   resetRestedPlayers(
-    availablePlayers,
+    players.filter(
+      (player) =>
+        !selectedIds.includes(
+          player.id
+        )
+    ),
     selectedIds
   )
 );
@@ -2156,12 +2323,36 @@ recordOpponents(
         (winningTeam === "A" && isTeamA) ||
         (winningTeam === "B" && !isTeamA);
 
+
+        const nextTier =
+  getNextTier(
+    court.type,
+    won
+  );
+
     const currentStreak = won
   ? (player.currentStreak || 0) + 1
   : 0;
 
 return {
   ...player,
+
+tier: nextTier,
+
+kingCourtEntries:
+
+  player.kingCourtEntries || 0
+
+  +
+
+  (
+    nextTier === "king" &&
+    player.tier !== "king"
+      ? 1
+      : 0
+  ),
+
+
   consecutiveGames: player.consecutiveGames || 0,
   priority: false,
   noPriority: false,
@@ -2678,8 +2869,49 @@ const recalculateStandings = async (
 
 //SORT PLAYERS
 const sortedPlayers = sortPlayers(players);
-const waitingPlayers =
-  sortedPlayers;
+const waitingPlayers =sortedPlayers;
+
+//queue
+const kingQueue =
+  waitingPlayers.filter(
+    (player) =>
+      player.tier === "king"
+  );
+
+const knightQueue =
+  waitingPlayers.filter(
+    (player) =>
+      player.tier === "knight"
+  );
+
+const squireQueue =
+  waitingPlayers.filter(
+    (player) =>
+      player.tier === "squire"
+  );
+
+
+  //getQueueByCourtType
+const getQueueByCourtType = (
+  courtType
+) => {
+
+  if (courtType === "king") {
+    return kingQueue;
+  }
+
+  if (courtType === "knight") {
+    return knightQueue;
+  }
+
+  if (courtType === "squire") {
+    return squireQueue;
+  }
+
+  return [];
+};
+
+
 const matchingPlayers =
   name.trim().length > 0
     ? directory
@@ -3158,6 +3390,20 @@ const renderPlayerRow = (
     </span>
   )}
 
+  <span
+  className="
+    bg-yellow-50
+    text-yellow-700
+    px-2
+    py-1
+    rounded-full
+    text-xs
+    font-semibold
+  "
+>
+  👑 Reached: {player.kingCourtEntries || 0}
+</span>
+
 </div>
 
       {player.priority && (
@@ -3365,6 +3611,8 @@ hover:bg-red-600
           ✕
         </button>
 
+        
+
       </div>
     </div>
   </div>
@@ -3381,6 +3629,12 @@ shadow-sm
 hover:shadow-md
 hover:-translate-y-0.5
 `;
+
+const editingCourt =
+  courts.find(
+    (court) =>
+      court.id === selectedCourtForEdit
+  );
 
   return (
     
@@ -3766,7 +4020,9 @@ focus:ring-blue-400
 
 
             <button
-              onClick={addCourt}
+  onClick={() =>
+    setShowCourtTypeModal(true)
+  }
               className={`${actionButton}
   bg-purple-500
   hover:bg-purple-600`}
@@ -4850,29 +5106,113 @@ return (
   <DroppableQueue>
           <div className="bg-white rounded-xl shadow p-4">
 
-            <h2 className="text-2xl font-bold mb-1">
-  Waiting Queue
+
+
+ <h2 className="text-2xl font-bold mb-4">
+  Player Queues
 </h2>
 
-<p className="text-sm text-gray-500 mb-4">
-  {waitingPlayers.length} players waiting
+
+
+{waitingPlayers.length === 0 ? (
+  <p>No players waiting</p>
+) : (
+
+<div className="space-y-6">
+
+  {/* KING QUEUE */}
+
+  <div>
+
+  <h3 className="text-lg font-bold text-yellow-600">
+  👑 King's Queue
+</h3>
+
+<p className="text-xs text-gray-500 mb-3">
+  {kingQueue.length} players waiting
 </p>
 
-            {sortedPlayers.length === 0 ? (
-              <p>No players waiting</p>
-            ) : (
+    <div className="space-y-3">
+      {kingQueue.map(
+        (player, index) =>
+          renderPlayerRow(
+            player,
+            index
+          )
+      )}
+    </div>
 
-<div className="space-y-3">
-  {waitingPlayers.map(
-    (player, index) =>
-      renderPlayerRow(
-        player,
-        index
-      )
-  )}
+  </div>
+
+  {/* KNIGHT QUEUE */}
+
+  <div>
+
+    <h3
+      className="
+      text-lg
+      font-bold
+      text-indigo-600
+      mb-3
+    "
+    >
+      ⚔️ Knight Queue
+      ({knightQueue.length})
+    </h3>
+    
+<p className="text-xs text-gray-500 mb-3">
+  {knightQueue.length} players waiting
+</p>
+
+    <div className="space-y-3">
+      {knightQueue.map(
+        (player, index) =>
+          renderPlayerRow(
+            player,
+            index
+          )
+      )}
+    </div>
+
+  </div>
+
+  {/* SQUIRE QUEUE */}
+
+  <div>
+
+    <h3
+      className="
+      text-lg
+      font-bold
+      text-green-600
+      mb-3
+    "
+    >
+      🛡️ Squire Queue
+      ({squireQueue.length})
+    </h3>
+
+      <p className="text-xs text-gray-500 mb-3">
+        {squireQueue.length} players waiting
+      </p>
+
+    <div className="space-y-3">
+      {squireQueue.map(
+        (player, index) =>
+          renderPlayerRow(
+            player,
+            index
+          )
+      )}
+    </div>
+
+  </div>
+
 </div>
 
-            )}
+)}
+
+
           </div>
 </DroppableQueue>
 </div>
@@ -4911,9 +5251,44 @@ border-blue-100
 
  <div>
 
+<div className="flex items-center gap-2">
+
   <h2 className="text-2xl font-bold text-blue-700">
-    🏓 Court #{court.id}
+
+    {court.type === "king" &&
+      "👑 King's Court"}
+
+    {court.type === "knight" &&
+      "⚔️ Knight Court"}
+
+    {court.type === "squire" &&
+      "🛡️ Squire Court"}
+
+    {!court.type &&
+      "📌 Court"}
+
+    {" "}
+    #{court.id}
+
   </h2>
+
+  <button
+    onClick={() =>
+      setSelectedCourtForEdit(
+        court.id
+      )
+    }
+    className="
+      text-lg
+      hover:scale-110
+      transition-all
+    "
+    title="Change Court Type"
+  >
+    ⚙️
+  </button>
+
+</div>
 
   {court.players.length === 4 && (
     <span
@@ -5148,6 +5523,83 @@ min-h-[72px]
 </div>
                   )}
 
+<button
+  onClick={() => {
+
+    const preview =
+      generatePreviewForCourt(
+        court
+      );
+
+    setCourtPreviews(
+      (prev) => ({
+        ...prev,
+        [court.id]: preview,
+      })
+    );
+
+  }}
+  className="
+    w-full
+    mb-3
+    bg-slate-700
+    hover:bg-slate-800
+    text-white
+    py-2
+    rounded-xl
+  "
+>
+  👀 Preview Next Match
+</button>
+
+{courtPreviews[court.id]?.length === 4 && (
+
+  <div
+    className="
+      mb-4
+      border
+      rounded-xl
+      p-3
+      bg-slate-50
+    "
+  >
+
+    <div className="font-bold mb-2">
+      Next Match Preview
+    </div>
+
+    <div className="text-sm">
+
+      🔵 Team A
+
+      <br />
+
+      {courtPreviews[court.id][0].name}
+
+      <br />
+
+      {courtPreviews[court.id][1].name}
+
+    </div>
+
+    <div className="text-sm mt-2">
+
+      🟣 Team B
+
+      <br />
+
+      {courtPreviews[court.id][2].name}
+
+      <br />
+
+      {courtPreviews[court.id][3].name}
+
+    </div>
+
+  </div>
+
+)}
+
 <div className="grid grid-cols-2 gap-2 mt-4">
   <button
     onClick={() =>
@@ -5307,7 +5759,229 @@ disabled:bg-gray-400
     </div>
   </div>
 )}
+{showCourtTypeModal && (
+  <div
+    className="
+      fixed
+      inset-0
+      bg-black/50
+      flex
+      items-center
+      justify-center
+      z-50
+    "
+  >
+    <div
+      className="
+        bg-white
+        rounded-2xl
+        p-6
+        shadow-xl
+        w-80
+      "
+    >
+      <h2 className="text-xl font-bold mb-4">
+        Select Court Type
+      </h2>
 
+      <div className="space-y-2">
+
+        <button
+          onClick={() =>
+            addCourt("king")
+          }
+          className="
+            w-full
+            bg-yellow-500
+            hover:bg-yellow-600
+            text-white
+            py-3
+            rounded-xl
+          "
+        >
+          👑 King's Court
+        </button>
+
+        <button
+          onClick={() =>
+            addCourt("knight")
+          }
+          className="
+            w-full
+            bg-indigo-500
+            hover:bg-indigo-600
+            text-white
+            py-3
+            rounded-xl
+          "
+        >
+          ⚔️ Knight Court
+        </button>
+
+        <button
+          onClick={() =>
+            addCourt("squire")
+          }
+          className="
+            w-full
+            bg-green-500
+            hover:bg-green-600
+            text-white
+            py-3
+            rounded-xl
+          "
+        >
+          🛡️ Squire Court
+        </button>
+
+        <button
+          onClick={() =>
+            setShowCourtTypeModal(false)
+          }
+          className="
+            w-full
+            bg-gray-200
+            py-2
+            rounded-xl
+          "
+        >
+          Cancel
+        </button>
+
+      </div>
+    </div>
+  </div>
+)}
+
+{selectedCourtForEdit && (
+  <div
+    className="
+      fixed
+      inset-0
+      bg-black/50
+      flex
+      items-center
+      justify-center
+      z-50
+    "
+  >
+    <div
+      className="
+        bg-white
+        rounded-2xl
+        p-6
+        shadow-xl
+        w-80
+      "
+    >
+
+      <h2 className="text-xl font-bold mb-4">
+  ⚙️ Court Settings
+</h2>
+
+      <div className="space-y-2">
+
+        <button
+          onClick={() =>
+            updateCourtType(
+              selectedCourtForEdit,
+              "king"
+            )
+          }
+          className="
+            w-full
+            bg-yellow-500
+            text-white
+            py-3
+            rounded-xl
+          "
+        >
+         {editingCourt?.type === "king"
+  ? "✅ 👑 King's Court"
+  : "👑 King's Court"}
+        </button>
+
+        <button
+          onClick={() =>
+            updateCourtType(
+              selectedCourtForEdit,
+              "knight"
+            )
+          }
+          className="
+            w-full
+            bg-indigo-500
+            text-white
+            py-3
+            rounded-xl
+          "
+        >
+          {editingCourt?.type === "knight"
+  ? "✅ ⚔️ Knight Court"
+  : "⚔️ Knight Court"}
+        </button>
+
+        <button
+          onClick={() =>
+            updateCourtType(
+              selectedCourtForEdit,
+              "squire"
+            )
+          }
+          className="
+            w-full
+            bg-green-500
+            text-white
+            py-3
+            rounded-xl
+          "
+        >
+          {editingCourt?.type === "squire"
+  ? "✅ 🛡️ Squire Court"
+  : "🛡️ Squire Court"}
+        </button>
+
+<hr className="my-3" />
+
+<button
+  onClick={() =>
+    deleteSpecificCourt(
+      selectedCourtForEdit
+    )
+  }
+  className="
+    w-full
+    bg-red-500
+    hover:bg-red-600
+    text-white
+    py-3
+    rounded-xl
+  "
+>
+  🗑️ Delete Court
+</button>
+
+        <button
+          onClick={() =>
+            setSelectedCourtForEdit(
+              null
+            )
+          }
+          className="
+            w-full
+            bg-gray-200
+            py-2
+            rounded-xl
+          "
+        >
+          Cancel
+        </button>
+
+      </div>
+
+    </div>
+  </div>
+)}
       </div> 
     </div>
   );
