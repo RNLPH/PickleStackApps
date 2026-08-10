@@ -1289,9 +1289,28 @@ const openTierSelection = () => {
   setShowTierModal(true);
 };
 
+
 const addPlayer = async (tier) => {
     const trimmedName =
   pendingPlayerName.trim();
+
+  const tierCount =
+  players.filter(
+    (player) =>
+      player.tier === tier
+  ).length;
+
+if (
+  tierCount >= TIER_LIMITS[tier]
+) {
+  setError(
+    `${tier.toUpperCase()} queue reached its limit of ${TIER_LIMITS[tier]} players.`
+  );
+
+  setShowTierModal(false);
+
+  return;
+}
 
     if (!trimmedName) {
       setError("Please enter a player name.");
@@ -2324,10 +2343,16 @@ recordOpponents(
         (winningTeam === "B" && !isTeamA);
 
 
-        const nextTier =
+  const rawNextTier =
   getNextTier(
     court.type,
     won
+  );
+
+const nextTier =
+  getEffectiveTier(
+    player.tier,
+    rawNextTier
   );
 
     const currentStreak = won
@@ -2911,6 +2936,50 @@ const getQueueByCourtType = (
   return [];
 };
 
+//TIER LIMITS 
+const TIER_LIMITS = {
+  king: 8,
+  knight: 10,
+  squire: 10,
+};
+
+//Queue Count
+const getTierCounts = () => ({
+  king: kingQueue.length,
+  knight: knightQueue.length,
+  squire: squireQueue.length,
+});
+
+//Promotion Validator
+const getEffectiveTier = (
+  currentTier,
+  nextTier
+) => {
+
+  if (currentTier === nextTier) {
+    return currentTier;
+  }
+
+  const counts =
+    getTierCounts();
+
+  const limit =
+    TIER_LIMITS[nextTier];
+
+  const currentCount =
+    counts[nextTier] || 0;
+
+  if (currentCount >= limit) {
+    return currentTier;
+  }
+
+  return nextTier;
+};
+
+
+
+
+
 
 const matchingPlayers =
   name.trim().length > 0
@@ -3306,15 +3375,36 @@ const renderPlayerRow = (
   {player.name}
 </div>
 
-<div className="text-xs">
-  {player.tier === "king" &&
-    "👑 King"}
+<div className="text-xs mt-1">
 
-  {player.tier === "knight" &&
-    "⚔️ Knight"}
+  <div className="text-gray-400">
+    Current Court
+  </div>
 
-  {player.tier === "squire" &&
-    "🛡️ Squire"}
+  <div
+  className={`
+    font-semibold
+    ${
+      player.tier === "king"
+        ? "text-yellow-600"
+        : player.tier === "knight"
+        ? "text-indigo-600"
+        : "text-green-600"
+    }
+  `}
+>
+
+    {player.tier === "king" &&
+      "👑 King's Court"}
+
+    {player.tier === "knight" &&
+      "⚔️ Knight Court"}
+
+    {player.tier === "squire" &&
+      "🛡️ Squire Court"}
+
+  </div>
+
 </div>
 
     <div className="text-xs text-gray-500">
@@ -3364,6 +3454,24 @@ const renderPlayerRow = (
     L {player.losses || 0}
   </span>
 
+<span
+  className="
+    bg-indigo-50
+    text-indigo-700
+    px-2
+    py-1
+    rounded-full
+    text-xs
+    font-semibold
+  "
+>
+  👥 {
+    Object.keys(
+      player.partnerHistory || {}
+    ).length
+  }
+</span>
+
 </div>
 
 <div className="flex items-center gap-3 mt-2 text-xs">
@@ -3402,6 +3510,24 @@ const renderPlayerRow = (
   "
 >
   👑 Reached: {player.kingCourtEntries || 0}
+</span>
+
+<span
+  className="
+    bg-indigo-50
+    text-indigo-700
+    px-2
+    py-1
+    rounded-full
+    text-xs
+    font-semibold
+  "
+>
+  👥 Partners: {
+    Object.keys(
+      player.partnerHistory || {}
+    ).length
+  }
 </span>
 
 </div>
@@ -5126,6 +5252,7 @@ return (
 
   <h3 className="text-lg font-bold text-yellow-600">
   👑 King's Queue
+({kingQueue.length}/8)
 </h3>
 
 <p className="text-xs text-gray-500 mb-3">
@@ -5157,7 +5284,7 @@ return (
     "
     >
       ⚔️ Knight Queue
-      ({knightQueue.length})
+({knightQueue.length}/10)
     </h3>
     
 <p className="text-xs text-gray-500 mb-3">
@@ -5189,7 +5316,7 @@ return (
     "
     >
       🛡️ Squire Queue
-      ({squireQueue.length})
+({squireQueue.length}/10)
     </h3>
 
       <p className="text-xs text-gray-500 mb-3">
