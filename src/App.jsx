@@ -602,6 +602,7 @@ const getCourtMinutes = (startedAt) => {
   );
 };
 
+//get attendance count
 const getAttendanceCount = (
   playerId
 ) => {
@@ -1283,8 +1284,16 @@ const generatePreviewForCourt = (
   );
 };
 
+//getPlayerNameById
+const getPlayerNameById = (id) => {
+  const found = directory.find(
+    (player) => player.id === id
+  );
 
-
+  return found
+    ? found.name
+    : "Unknown";
+};
 
 //END OF HELPER
 
@@ -1542,6 +1551,25 @@ const updateCourtType = (
   courtType
 ) => {
 
+  const targetCourt =
+    courts.find(
+      (court) =>
+        court.id === courtId
+    );
+
+  if (!targetCourt) {
+    return;
+  }
+
+  if (
+    targetCourt.players.length > 0
+  ) {
+    alert(
+      "Cannot change court type while players are on the court."
+    );
+    return;
+  }
+
   setCourts((prev) =>
     prev.map((court) =>
       court.id === courtId
@@ -1555,6 +1583,7 @@ const updateCourtType = (
 
   setSelectedCourtForEdit(null);
 };
+
 
 
 
@@ -1962,6 +1991,47 @@ const sourceCourt = courts.find(
       (p) => p.id === playerId
     )
 );
+
+const targetCourt = courts.find(
+  (court) =>
+    court.id === targetCourtId
+);
+
+if (!targetCourt) {
+  return;
+}
+
+//Tier Validation
+const playerToCheck =
+  sourceCourt?.players.find(
+    (player) =>
+      player.id === playerId
+  );
+
+if (
+  playerToCheck &&
+  targetCourt.type &&
+  playerToCheck.tier !== targetCourt.type
+) {
+  alert(
+    `Cannot move ${playerToCheck.name} from ${playerToCheck.tier.toUpperCase()} to ${targetCourt.type.toUpperCase()} court.`
+  );
+
+  return;
+}
+
+//alert  Prevent Breaking Active Match
+if (
+  sourceCourt &&
+  sourceCourt.players.length === 4
+) {
+  alert(
+    "Cannot move players while a match is active."
+  );
+
+  return;
+}
+
 
 if (
   sourceCourt &&
@@ -5772,12 +5842,15 @@ min-h-[72px]
 "
 >  
 <div className="flex-1 min-w-0">
+
   <DroppableCourtPlayer
     player={player}
   >
+
     <DraggableCourtPlayer
       player={player}
     />
+
   </DroppableCourtPlayer>
 </div>
 
@@ -6533,6 +6606,46 @@ disabled:bg-gray-400
         </div>
 
         <div>
+  👥 Sessions Attended:
+  {" "}
+  {getAttendanceCount(
+    selectedPlayerProfile.id
+  )}
+</div>
+
+<div>
+  {selectedPlayerProfile.tier === "king" &&
+    "👑 King's Court"}
+
+  {selectedPlayerProfile.tier === "knight" &&
+    "⚔️ Knight Court"}
+
+  {selectedPlayerProfile.tier === "squire" &&
+    "🛡️ Squire Court"}
+</div>
+
+          <div>
+  🔥 Current Streak:
+  {" "}
+  {selectedPlayerProfile.currentStreak || 0}
+</div>
+
+<div>
+  🏆 Best Streak:
+  {" "}
+  {selectedPlayerProfile.bestStreak || 0}
+</div>
+
+<div>
+  ⏳ Waiting:
+  {" "}
+  {getRelativeTime(
+    selectedPlayerProfile.waitingSince
+  )}
+</div>
+
+
+        <div>
           Unique Partners:
           {" "}
           {
@@ -6541,6 +6654,100 @@ disabled:bg-gray-400
             ).length
           }
         </div>
+
+<div className="mt-4">
+
+  <div className="font-semibold mb-2">
+    🏆 Achievements
+  </div>
+
+  <div className="flex flex-wrap gap-2">
+
+    {(selectedPlayerProfile.wins || 0) >= 10 && (
+      <span className="bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full text-xs">
+        🏅 10 Wins Club
+      </span>
+    )}
+
+    {(selectedPlayerProfile.bestStreak || 0) >= 3 && (
+      <span className="bg-orange-100 text-orange-700 px-2 py-1 rounded-full text-xs">
+        🔥 Hot Streak
+      </span>
+    )}
+
+    {(selectedPlayerProfile.kingCourtEntries || 0) >= 3 && (
+      <span className="bg-purple-100 text-purple-700 px-2 py-1 rounded-full text-xs">
+        👑 Court Veteran
+      </span>
+    )}
+    {(
+  selectedPlayerProfile.gamesPlayed > 0 &&
+  (
+    selectedPlayerProfile.wins /
+    selectedPlayerProfile.gamesPlayed
+  ) >= 0.75
+) && (
+  <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs">
+    🎯 75% Win Rate
+  </span>
+)}
+
+
+    {Object.keys(
+      selectedPlayerProfile.partnerHistory || {}
+    ).length >= 5 && (
+      <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs">
+        🤝 Team Player
+      </span>
+    )}
+
+  </div>
+
+</div>
+
+        <div className="mt-4">
+  <div className="font-semibold mb-2">
+    👥 Partner History
+  </div>
+
+  {Object.entries(
+    selectedPlayerProfile.partnerHistory || {}
+  ).length === 0 ? (
+    <div className="text-gray-500 text-sm">
+      No partner history yet
+    </div>
+  ) : (
+
+   Object.entries(
+  selectedPlayerProfile.partnerHistory || {}
+)
+.sort((a, b) => b[1] - a[1])
+.map(([partnerId, count]) => (
+
+      <div
+        key={partnerId}
+        className="
+          flex
+          justify-between
+          text-sm
+          py-1
+        "
+      >
+        <span>
+          {getPlayerNameById(
+            partnerId
+          )}
+        </span>
+
+        <span>
+          {count} game
+          {count > 1 ? "s" : ""}
+        </span>
+      </div>
+    ))
+  )}
+
+</div>
 
       </div>
 
