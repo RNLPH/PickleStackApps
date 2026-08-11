@@ -288,7 +288,10 @@ const [
   setSelectedPlayerForEdit
 ] = useState(null);
 
-
+const [
+  selectedPlayerProfile,
+  setSelectedPlayerProfile
+] = useState(null);
 
 
 
@@ -1282,22 +1285,23 @@ const generatePreviewForCourt = (
 
 
 
+
 //END OF HELPER
 
 // ===== PLAYER ACTIONS =====
 
 //Choices modal
-const openTierSelection = () => {
-  const trimmedName = name.trim();
+  function openTierSelection() {
+    const trimmedName = name.trim();
 
-  if (!trimmedName) {
-    setError("Please enter a player name.");
-    return;
+    if (!trimmedName) {
+      setError("Please enter a player name.");
+      return;
+    }
+
+    setPendingPlayerName(trimmedName);
+    setShowTierModal(true);
   }
-
-  setPendingPlayerName(trimmedName);
-  setShowTierModal(true);
-};
 
 
 const addPlayer = async (tier) => {
@@ -2151,6 +2155,65 @@ const getNextTier = (
 };
   // ===== MATCH ACTIONS =====
 
+  //confirmPreview
+  const confirmPreview = (courtId) => {
+  const preview = courtPreviews[courtId];
+
+  if (!preview || preview.length !== 4) {
+    alert("Preview requires exactly 4 players.");
+    return;
+  }
+
+  const court = courts.find(
+  (c) => c.id === courtId
+);
+
+if (
+  court &&
+  court.players.length > 0
+) {
+  alert(
+    "Court already has an active match."
+  );
+  return;
+}
+
+  const previewIds = preview.map(
+    (player) => player.id
+  );
+
+  setCourts((prev) =>
+    prev.map((court) =>
+      court.id === courtId
+        ? {
+            ...court,
+            players: preview.map((player) => ({
+              ...player,
+              consecutiveGames:
+                (player.consecutiveGames || 0) + 1,
+            })),
+            startedAt: Date.now(),
+          }
+        : court
+    )
+  );
+
+  setPlayers((prev) =>
+    prev.filter(
+      (player) =>
+        !previewIds.includes(player.id)
+    )
+  );
+
+  setCourtPreviews((prev) => {
+    const updated = { ...prev };
+    delete updated[courtId];
+    return updated;
+  });
+};
+
+
+//start game
 
 const startNextGame = () => {
   assignPlayersToAllCourts();
@@ -3793,6 +3856,26 @@ ${
 >
   🔄
 </button>
+  <button
+  onClick={() =>
+    setSelectedPlayerProfile(player)
+  }
+  className="
+    w-9
+    h-9
+    rounded-lg
+    flex
+    items-center
+    justify-center
+    bg-blue-500
+    text-white
+    hover:bg-blue-600
+  "
+  title="View Profile"
+>
+  👤
+</button>
+
 
         <button
           onClick={() => {
@@ -5835,7 +5918,7 @@ min-h-[72px]
       bg-slate-50
     "
   >
-
+ 
     <div className="font-bold mb-2">
       Next Match Preview
     </div>
@@ -5868,9 +5951,31 @@ min-h-[72px]
 
     </div>
 
+    <button
+  onClick={() =>
+    confirmPreview(court.id)
+  }
+  className="
+    w-full
+    mt-3
+    bg-green-600
+    hover:bg-green-700
+    text-white
+    py-2
+    rounded-xl
+  "
+>
+  ✅ Confirm Match
+</button>
+
+
   </div>
 
+  
+
 )}
+
+
 
 <div className="grid grid-cols-2 gap-2 mt-4">
   <button
@@ -6361,6 +6466,101 @@ disabled:bg-gray-400
 
   </div>
 
+)}
+
+{selectedPlayerProfile && (
+  <div
+    className="
+      fixed
+      inset-0
+      bg-black/50
+      flex
+      items-center
+      justify-center
+      z-50
+    "
+  >
+    <div
+      className="
+        bg-white
+        rounded-2xl
+        p-6
+        shadow-xl
+        w-96
+      "
+    >
+      <h2 className="text-2xl font-bold mb-4">
+        👤 {selectedPlayerProfile.name}
+      </h2>
+
+      <div className="space-y-2">
+
+        <div>
+          Games:
+          {" "}
+          {selectedPlayerProfile.gamesPlayed || 0}
+        </div>
+
+        <div>
+          Wins:
+          {" "}
+          {selectedPlayerProfile.wins || 0}
+        </div>
+
+        <div>
+          Losses:
+          {" "}
+          {selectedPlayerProfile.losses || 0}
+        </div>
+
+        <div>
+          Win Rate:
+          {" "}
+          {selectedPlayerProfile.gamesPlayed > 0
+            ? Math.round(
+                (selectedPlayerProfile.wins /
+                  selectedPlayerProfile.gamesPlayed) *
+                  100
+              )
+            : 0}
+          %
+        </div>
+
+        <div>
+          King Court Entries:
+          {" "}
+          {selectedPlayerProfile.kingCourtEntries || 0}
+        </div>
+
+        <div>
+          Unique Partners:
+          {" "}
+          {
+            Object.keys(
+              selectedPlayerProfile.partnerHistory || {}
+            ).length
+          }
+        </div>
+
+      </div>
+
+      <button
+        onClick={() =>
+          setSelectedPlayerProfile(null)
+        }
+        className="
+          mt-5
+          w-full
+          bg-gray-200
+          hover:bg-gray-300
+          py-2
+          rounded-xl
+        "
+      >
+        Close
+      </button>
+    </div>
+  </div>
 )}
       </div> 
     </div>
