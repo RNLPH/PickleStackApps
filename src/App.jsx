@@ -6215,10 +6215,11 @@ min-h-[72px]
 
     </div>
 
-    <button
+ <button
   onClick={() =>
     confirmPreview(court.id)
   }
+  disabled={!!selectedPreviewPlayer}
   className="
     w-full
     mt-3
@@ -6227,6 +6228,8 @@ min-h-[72px]
     text-white
     py-2
     rounded-xl
+    disabled:bg-gray-400
+    disabled:cursor-not-allowed
   "
 >
   ✅ Confirm Match
