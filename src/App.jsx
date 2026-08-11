@@ -294,7 +294,10 @@ const [
 ] = useState(null);
 
 
-
+const [
+  selectedPreviewPlayer,
+  setSelectedPreviewPlayer
+] = useState(null);
 
 const [sessionId, setSessionId] = useState(() => {
   return Number(
@@ -1282,6 +1285,104 @@ const generatePreviewForCourt = (
   return createBalancedTeams(
     selectedPlayers
   );
+};
+
+
+//swapPreviewPlayers
+const swapPreviewPlayers = (
+  courtId,
+  firstPlayerId,
+  secondPlayerId
+) => {
+
+  setCourtPreviews((prev) => {
+
+    const preview =
+      [...(prev[courtId] || [])];
+
+    const firstIndex =
+      preview.findIndex(
+        (player) =>
+          player.id === firstPlayerId
+      );
+
+    const secondIndex =
+      preview.findIndex(
+        (player) =>
+          player.id === secondPlayerId
+      );
+
+    if (
+      firstIndex === -1 ||
+      secondIndex === -1
+    ) {
+      return prev;
+    }
+
+    [
+      preview[firstIndex],
+      preview[secondIndex]
+    ] = [
+      preview[secondIndex],
+      preview[firstIndex]
+    ];
+
+  return {
+    ...prev,
+    [courtId]: preview,
+  };
+
+
+
+  });
+
+};
+
+//handlePreviewPlayerClick
+const handlePreviewPlayerClick = (
+  courtId,
+  player
+) => {
+
+  if (!selectedPreviewPlayer) {
+
+   setSelectedPreviewPlayer({
+  courtId,
+  playerId: player.id,
+  playerName: player.name,
+});
+
+    return;
+  }
+
+  if (
+    selectedPreviewPlayer.playerId ===
+    player.id
+  ) {
+
+    setSelectedPreviewPlayer(null);
+
+    return;
+  }
+
+  if (
+  selectedPreviewPlayer.courtId !==
+  courtId
+) {
+
+  setSelectedPreviewPlayer(null);
+
+  return;
+}
+
+
+  swapPreviewPlayers(
+    courtId,
+    selectedPreviewPlayer.playerId,
+    player.id
+  );
+
+  setSelectedPreviewPlayer(null);
 };
 
 //getPlayerNameById
@@ -2291,8 +2392,6 @@ const startNextGame = () => {
 
   //assign players
 const assignPlayers = () => {
-
-  console.log("===== ASSIGN PLAYERS =====");
 
 console.table(
   players.map((p) => ({
@@ -5993,8 +6092,52 @@ min-h-[72px]
   >
  
     <div className="font-bold mb-2">
-      Next Match Preview
+  Next Match Preview
+</div>
+
+{selectedPreviewPlayer && (
+  <div
+    className="
+      mb-3
+      rounded-lg
+      bg-yellow-100
+      text-yellow-800
+      p-2
+      text-xs
+      font-semibold
+    "
+  >
+    <div>
+      🔄 Selected: {selectedPreviewPlayer.playerName}
     </div>
+
+    <div className="mt-1">
+      Click another player to swap.
+    </div>
+
+    <button
+      onClick={() =>
+        setSelectedPreviewPlayer(null)
+      }
+      className="
+        mt-2
+        px-2
+        py-1
+        rounded
+        bg-red-500
+        text-white
+        text-xs
+        hover:bg-red-600
+      "
+    >
+      🚫 Cancel Selection
+    </button>
+  </div>
+)}
+
+<p className="text-xs text-gray-500 mb-2">
+  Click two players to swap positions.
+</p>
 
     <div className="text-sm">
 
@@ -6002,11 +6145,36 @@ min-h-[72px]
 
       <br />
 
-      {courtPreviews[court.id][0].name}
+      {courtPreviews[court.id]
+  .slice(0, 2)
+  .map((player) => (
 
-      <br />
+    <div
+      key={player.id}
+      onClick={() =>
+        handlePreviewPlayerClick(
+          court.id,
+          player
+        )
+      }
+      className={`
+        cursor-pointer
+        p-2
+        rounded
+        mb-1
 
-      {courtPreviews[court.id][1].name}
+        ${
+          selectedPreviewPlayer?.playerId ===
+          player.id
+            ? "bg-yellow-200"
+            : "bg-white"
+        }
+      `}
+    >
+      {player.name}
+    </div>
+
+))}
 
     </div>
 
@@ -6014,13 +6182,36 @@ min-h-[72px]
 
       🟣 Team B
 
-      <br />
+     {courtPreviews[court.id]
+  .slice(2, 4)
+  .map((player) => (
 
-      {courtPreviews[court.id][2].name}
+    <div
+      key={player.id}
+      onClick={() =>
+        handlePreviewPlayerClick(
+          court.id,
+          player
+        )
+      }
+      className={`
+        cursor-pointer
+        p-2
+        rounded
+        mb-1
 
-      <br />
+        ${
+          selectedPreviewPlayer?.playerId ===
+          player.id
+            ? "bg-yellow-200"
+            : "bg-white"
+        }
+      `}
+    >
+      {player.name}
+    </div>
 
-      {courtPreviews[court.id][3].name}
+))}
 
     </div>
 
