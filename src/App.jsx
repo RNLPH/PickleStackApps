@@ -1287,6 +1287,40 @@ const generatePreviewForCourt = (
   );
 };
 
+//regeneratePreview
+const regeneratePreview = (
+  court
+) => {
+
+  const currentPreview =
+    courtPreviews[court.id];
+
+  if (
+    !currentPreview ||
+    currentPreview.length !== 4
+  ) {
+    return;
+  }
+
+  const shuffled =
+    shufflePlayers(
+      currentPreview
+    );
+
+  const preview =
+    createBalancedTeams(
+      shuffled
+    );
+
+  setCourtPreviews((prev) => ({
+    ...prev,
+    [court.id]: preview,
+  }));
+
+  setSelectedPreviewPlayer(
+    null
+  );
+};
 
 //swapPreviewPlayers
 const swapPreviewPlayers = (
@@ -6078,6 +6112,29 @@ min-h-[72px]
 >
   👀 Preview Next Match
 </button>
+
+
+{courtPreviews[court.id]?.length > 0 && (
+  <button
+    onClick={() =>
+      regeneratePreview(court)
+    }
+    className="
+      w-full
+      mb-3
+      bg-orange-500
+      hover:bg-orange-600
+      text-white
+      py-2
+      rounded-xl
+    "
+  >
+    🔄 Regenerate Preview
+  </button>
+)}
+
+
+
 
 {courtPreviews[court.id]?.length === 4 && (
 
