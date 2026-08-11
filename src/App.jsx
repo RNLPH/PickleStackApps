@@ -293,11 +293,18 @@ const [
   setSelectedPlayerProfile
 ] = useState(null);
 
-
 const [
   selectedPreviewPlayer,
   setSelectedPreviewPlayer
 ] = useState(null);
+
+const [
+  selectedPreviewCourt,
+  setSelectedPreviewCourt
+] = useState(null);
+
+
+
 
 const [sessionId, setSessionId] = useState(() => {
   return Number(
@@ -1259,6 +1266,54 @@ const recordOpponents = (
 };
 
 
+// addPreviewPlayer
+const addPreviewPlayer = (courtId, player) => {
+
+  setCourtPreviews((prev) => {
+    const updated = {
+      ...prev,
+      [courtId]: [
+        ...(prev[courtId] || []),
+        player,
+      ],
+    };
+
+    return updated;
+  });
+
+  setSelectedPreviewCourt(null);
+};
+
+
+//replacePreviewPlayer
+const replacePreviewPlayer = (courtId, oldPlayerId, newPlayer) => {
+
+  setCourtPreviews((prev) => ({
+    ...prev,
+    [courtId]: (prev[courtId] || []).map((player) =>
+      player.id === oldPlayerId ? newPlayer : player
+    ),
+  }));
+
+  setSelectedPreviewPlayer(null);
+  setSelectedPreviewCourt(null);
+};
+
+//removePreviewPlayer
+const removePreviewPlayer = (courtId, playerId) => {
+
+  setCourtPreviews((prev) => ({
+    ...prev,
+    // Fix: Properly close the key [courtId] and format the array fallback
+    [courtId]: (prev[courtId] || []).filter(
+      (player) => player.id !== playerId
+    ),
+  }));
+
+  setSelectedPreviewPlayer(null);
+};
+
+
 //generatePreviewForCourt
 const generatePreviewForCourt = (
   court
@@ -1286,6 +1341,7 @@ const generatePreviewForCourt = (
     selectedPlayers
   );
 };
+
 
 //regeneratePreview
 const regeneratePreview = (
@@ -1371,6 +1427,10 @@ const swapPreviewPlayers = (
   });
 
 };
+
+
+//
+
 
 //handlePreviewPlayerClick
 const handlePreviewPlayerClick = (
@@ -3273,10 +3333,34 @@ const squireQueue =
   );
 
 
+const getAvailablePreviewPlayers = (
+  court
+) => {
+
+  if (!court) {
+    return [];
+  }
+
+  const previewPlayers =
+    courtPreviews[court.id] || [];
+
+  return getQueueByCourtType(
+    court.type
+  ).filter(
+    (player) =>
+      !previewPlayers.some(
+        (previewPlayer) =>
+          previewPlayer.id === player.id
+      )
+  );
+
+};
+
   //getQueueByCourtType
 const getQueueByCourtType = (
   courtType
 ) => {
+
 
   if (courtType === "king") {
     return kingQueue;
@@ -3292,6 +3376,7 @@ const getQueueByCourtType = (
 
   return [];
 };
+
 
 //TIER LIMITS 
 const TIER_LIMITS = {
@@ -6136,7 +6221,7 @@ min-h-[72px]
 
 
 
-{courtPreviews[court.id]?.length === 4 && (
+{courtPreviews[court.id]?.length > 0 && (
 
   <div
     className="
@@ -6207,29 +6292,49 @@ min-h-[72px]
   .map((player) => (
 
     <div
-      key={player.id}
-      onClick={() =>
-        handlePreviewPlayerClick(
-          court.id,
-          player
-        )
-      }
-      className={`
-        cursor-pointer
-        p-2
-        rounded
-        mb-1
+  key={player.id}
+  className={`
+    flex
+    justify-between
+    items-center
+    p-2
+    rounded
+    mb-1
+    ${
+      selectedPreviewPlayer?.playerId === player.id
+        ? "bg-yellow-200"
+        : "bg-white"
+    }
+  `}
+>
+  <span
+    className="flex-1 cursor-pointer"
+    onClick={() =>
+      handlePreviewPlayerClick(
+        court.id,
+        player
+      )
+    }
+  >
+    {player.name}
+  </span>
 
-        ${
-          selectedPreviewPlayer?.playerId ===
-          player.id
-            ? "bg-yellow-200"
-            : "bg-white"
-        }
-      `}
-    >
-      {player.name}
-    </div>
+  <button
+    onClick={() =>
+      removePreviewPlayer(
+        court.id,
+        player.id
+      )
+    }
+    className="
+      ml-2
+      text-red-500
+      font-bold
+    "
+  >
+    ✕
+  </button>
+</div>
 
 ))}
 
@@ -6243,34 +6348,109 @@ min-h-[72px]
   .slice(2, 4)
   .map((player) => (
 
-    <div
-      key={player.id}
-      onClick={() =>
-        handlePreviewPlayerClick(
-          court.id,
-          player
-        )
-      }
-      className={`
-        cursor-pointer
-        p-2
-        rounded
-        mb-1
+<div
+  key={player.id}
+  className={`
+    flex
+    justify-between
+    items-center
+    p-2
+    rounded
+    mb-1
+    ${
+      selectedPreviewPlayer?.playerId === player.id
+        ? "bg-yellow-200"
+        : "bg-white"
+    }
+  `}
+>
+  <span
+    className="flex-1 cursor-pointer"
+    onClick={() =>
+      handlePreviewPlayerClick(
+        court.id,
+        player
+      )
+    }
+  >
+    {player.name}
+  </span>
 
-        ${
-          selectedPreviewPlayer?.playerId ===
-          player.id
-            ? "bg-yellow-200"
-            : "bg-white"
-        }
-      `}
-    >
-      {player.name}
-    </div>
+  <button
+    onClick={() =>
+      removePreviewPlayer(
+        court.id,
+        player.id
+      )
+    }
+    className="
+      ml-2
+      text-red-500
+      font-bold
+    "
+  >
+    ✕
+  </button>
+</div>
+
 
 ))}
 
     </div>
+
+{courtPreviews[court.id].length < 4 ? (
+
+  <button
+    onClick={() =>
+      setSelectedPreviewCourt(
+        court.id
+      )
+    }
+    className="
+      w-full
+      mt-2
+      bg-green-500
+      hover:bg-green-600
+      text-white
+      py-2
+      rounded-xl
+    "
+  >
+    ➕ Add Missing Player
+  </button>
+
+) : (
+
+  <button
+    onClick={() => {
+
+      if (!selectedPreviewPlayer) {
+        alert(
+          "Select a preview player to replace first."
+        );
+        return;
+      }
+
+      setSelectedPreviewCourt(
+        court.id
+      );
+    }}
+    className="
+      w-full
+      mt-2
+      bg-blue-500
+      hover:bg-blue-600
+      text-white
+      py-2
+      rounded-xl
+    "
+  >
+    🔄 Replace Preview Player
+  </button>
+
+)}
+
+
 
  <button
   onClick={() =>
@@ -7019,6 +7199,106 @@ disabled:bg-gray-400
       </button>
     </div>
   </div>
+)}
+{selectedPreviewCourt && (
+
+  <div
+    className="
+      fixed
+      inset-0
+      bg-black/50
+      flex
+      items-center
+      justify-center
+      z-50
+    "
+  >
+
+    <div
+      className="
+        bg-white
+        rounded-2xl
+        p-6
+        shadow-xl
+        w-80
+      "
+    >
+
+      <h2 className="text-xl font-bold mb-4">
+  Replace {selectedPreviewPlayer?.playerName}
+</h2>
+
+      {getAvailablePreviewPlayers(
+        courts.find(
+          (court) =>
+            court.id ===
+            selectedPreviewCourt
+        )
+      ).map((player) => (
+
+ <button
+  key={player.id}
+
+ onClick={() => {
+
+  const preview =
+    courtPreviews[
+      selectedPreviewCourt
+    ] || [];
+
+  if (preview.length < 4) {
+
+    addPreviewPlayer(
+      selectedPreviewCourt,
+      player
+    );
+
+  } else {
+
+    replacePreviewPlayer(
+      selectedPreviewCourt,
+      selectedPreviewPlayer.playerId,
+      player
+    );
+
+  }
+}}
+
+  className="
+    w-full
+    mb-2
+    bg-blue-500
+    hover:bg-blue-600
+    text-white
+    py-2
+    rounded-xl
+  "
+>
+  {player.name}
+</button>
+
+      ))}
+
+      <button
+        onClick={() =>
+          setSelectedPreviewCourt(
+            null
+          )
+        }
+        className="
+          w-full
+          bg-gray-200
+          py-2
+          rounded-xl
+        "
+      >
+        Cancel
+      </button>
+
+    </div>
+
+  </div>
+
 )}
       </div> 
     </div>
