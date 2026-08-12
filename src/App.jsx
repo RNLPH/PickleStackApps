@@ -4,7 +4,7 @@ import { getPlayers, savePlayers } from "./db/playerService";
 import { saveMatch, getMatches, updateMatch, deleteMatchesBySession, clearAllMatches, } from "./db/matchService";
 import { getAttendance, saveAttendance, clearAttendance, deleteAttendanceBySession, } from "./db/attendanceService";
 import { getStandingsHistory, saveStandingsHistory, clearStandingsHistory } from "./db/standingsHistoryService";
-import { DndContext, useDraggable, useDroppable, } from "@dnd-kit/core";
+import { DndContext, DragOverlay, useDraggable, useDroppable,  } from "@dnd-kit/core";
 
 const DEFAULT_COURTS = [
   {
@@ -43,7 +43,7 @@ const style = {
       )`
     : undefined,
 
-  zIndex: transform ? 9999 : 1,
+  zIndex: transform ? 99999 : 1,
   position: "relative",
 };
 
@@ -303,7 +303,8 @@ const [
   setSelectedPreviewCourt
 ] = useState(null);
 
-
+const [activePlayer, setActivePlayer] =
+  useState(null);
 
 
 const [sessionId, setSessionId] = useState(() => {
@@ -2013,20 +2014,40 @@ const swapCourtPlayers = (
     ) {
       return prevCourts;
     }
+    
 
-    const sourcePlayer =
-      updatedCourts[
-        sourceLocation.courtIndex
-      ].players[
-        sourceLocation.playerIndex
-      ];
+    const sourceCourt =
+  updatedCourts[
+    sourceLocation.courtIndex
+  ];
 
-    const targetPlayer =
-      updatedCourts[
-        targetLocation.courtIndex
-      ].players[
-        targetLocation.playerIndex
-      ];
+const targetCourt =
+  updatedCourts[
+    targetLocation.courtIndex
+  ];
+
+const sourcePlayer =
+  sourceCourt.players[
+    sourceLocation.playerIndex
+  ];
+
+const targetPlayer =
+  targetCourt.players[
+    targetLocation.playerIndex
+  ];
+
+// Prevent tier violations
+if (
+  sourceCourt.type !==
+  targetCourt.type
+) {
+
+  alert(
+    `Cannot swap players between ${sourceCourt.type?.toUpperCase()} and ${targetCourt.type?.toUpperCase()} courts.`
+  );
+
+  return prevCourts;
+}
 
     updatedCourts[
       sourceLocation.courtIndex
@@ -4027,14 +4048,29 @@ focus:ring-blue-400
           Select Court
         </option>
 
-        {courts.map((court) => (
+        {courts
+  .filter(
+    (court) =>
+      court.type === player.tier
+  )
+  .map((court) => (
           <option
-            key={court.id}
-            value={court.id}
-          >
-            Court {court.id} (
-            {court.players.length}/4)
-          </option>
+  key={court.id}
+  value={court.id}
+>
+  {court.type === "king" && "👑 "}
+  {court.type === "knight" && "⚔️ "}
+  {court.type === "squire" && "🛡️ "}
+
+  {court.type
+    ? `${court.type
+        .charAt(0)
+        .toUpperCase()}${court.type.slice(1)}`
+    : "Court"}
+
+  #{court.id}
+  ({court.players.length}/4)
+</option>
         ))}
       </select>
 
@@ -5739,12 +5775,23 @@ return (
 {activeTab === "dashboard" && (
 
 <DndContext
-  onDragEnd={handleDragEnd}
+  onDragStart={(event) => {
+    setActivePlayer(
+      event.active.data.current?.player
+    );
+  }}
+  onDragEnd={(event) => {
+    handleDragEnd(event);
+    setActivePlayer(null);
+  }}
+  onDragCancel={() => {
+    setActivePlayer(null);
+  }}
 >
 
-<div className="grid lg:grid-cols-12 gap-6">
+<div className="space-y-6">
   
-  <div className="lg:col-span-4">
+  <div>
   <DroppableQueue>
           <div className="bg-white rounded-xl shadow p-4">
 
@@ -5760,11 +5807,25 @@ return (
   <p>No players waiting</p>
 ) : (
 
-<div className="space-y-6">
+<div className="
+  grid
+  grid-cols-1
+  lg:grid-cols-3
+  gap-4
+">
 
-  {/* KING QUEUE */}
-
-  <div>
+ {/* KING QUEUE */}
+<div
+  className="
+    max-h-[45vh]
+lg:max-h-[55vh]
+    overflow-y-auto
+    rounded-xl
+    border
+    border-slate-200
+    p-3
+  "
+>
 
   <h3 className="text-lg font-bold text-yellow-600">
   👑 King's Queue
@@ -5787,9 +5848,17 @@ return (
 
   </div>
 
-  {/* KNIGHT QUEUE */}
-
-  <div>
+<div
+  className="
+    max-h-[45vh]
+lg:max-h-[55vh]
+    overflow-y-auto
+    rounded-xl
+    border
+    border-slate-200
+    p-3
+  "
+>
 
     <h3
       className="
@@ -5819,9 +5888,17 @@ return (
 
   </div>
 
-  {/* SQUIRE QUEUE */}
-
-  <div>
+<div
+  className="
+   max-h-[45vh]
+lg:max-h-[55vh]
+    overflow-y-auto
+    rounded-xl
+    border
+    border-slate-200
+    p-3
+  "
+>
 
     <h3
       className="
@@ -5859,7 +5936,22 @@ return (
           </div>
 </DroppableQueue>
 </div>
-          <div className="lg:col-span-8">
+<div className="my-6">
+  <hr className="border-slate-300" />
+
+  <div className="
+    text-center
+    font-bold
+    text-xl
+    text-slate-700
+    my-4
+  ">
+    🏓 Active Courts
+  </div>
+
+  <hr className="border-slate-300" />
+</div>
+          <div>
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
               
               {courts.map((court) => (
@@ -6538,6 +6630,34 @@ disabled:bg-gray-400
             </div>
           </div>
         </div>
+
+<DragOverlay>
+  {activePlayer ? (
+    <div
+      className="
+        w-12
+        h-12
+        rounded-full
+        bg-blue-500
+        text-white
+        flex
+        items-center
+        justify-center
+        font-bold
+        shadow-xl
+        border-2
+        border-white
+      "
+      style={{
+        zIndex: 999999,
+      }}
+    >
+      {activePlayer.name.charAt(0).toUpperCase()}
+    </div>
+  ) : null}
+</DragOverlay>
+
+
         </DndContext>
         )}
         {showTierModal && (
